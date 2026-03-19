@@ -21,13 +21,8 @@ interface BattleLog {
   damage?: number;
 }
 
-const ENEMIES: Fighter[] = [
-  { name: "Громозека", level: 3, hp: 140, maxHp: 140, attack: 18, defense: 12, magic: 5, speed: 8, avatar: "👹" },
-  { name: "Ведьмак77", level: 2, hp: 110, maxHp: 110, attack: 14, defense: 9, magic: 14, speed: 12, avatar: "🧙" },
-  { name: "Стальной", level: 2, hp: 130, maxHp: 130, attack: 16, defense: 16, magic: 3, speed: 7, avatar: "⚔️" },
-  { name: "ТёмнаяЗвезда", level: 1, hp: 90, maxHp: 90, attack: 13, defense: 7, magic: 18, speed: 14, avatar: "🌑" },
-  { name: "Скиталец", level: 1, hp: 85, maxHp: 85, attack: 11, defense: 10, magic: 8, speed: 11, avatar: "🗺️" },
-];
+const ENEMY_NAMES = ["Громозека", "Ведьмак77", "Стальной", "ТёмнаяЗвезда", "Скиталец", "Варвар", "Чародей", "Следопыт"];
+const ENEMY_AVATARS = ["👹", "🧙", "⚔️", "🌑", "🗺️", "🪓", "🔮", "🏹"];
 
 type BattlePhase = "search" | "ready" | "fighting" | "victory" | "defeat";
 
@@ -50,7 +45,10 @@ interface DuelSectionProps {
   maxBattles: number;
   regenTimer: number | null;
   onSpendBattle: () => boolean;
-  onDuelEnd: (result: "victory" | "defeat", enemyName: string, xp: number, gold: number) => void;
+  onDuelEnd: (result: "victory" | "defeat", enemyName: string, xp: number, gold: number, silver: number) => void;
+  difficulty: "higher" | "equal" | "lower";
+  onDifficultyChange: (d: "higher" | "equal" | "lower") => void;
+  playerLevel: number;
 }
 
 function formatTimer(ms: number) {
@@ -60,7 +58,33 @@ function formatTimer(ms: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export default function DuelSection({ hero: heroBase, battles, maxBattles, regenTimer, onSpendBattle, onDuelEnd }: DuelSectionProps) {
+function generateEnemy(playerLevel: number, difficulty: "higher" | "equal" | "lower"): Fighter {
+  let enemyLevel: number;
+  if (difficulty === "higher") {
+    enemyLevel = playerLevel + rnd(1, 2);
+  } else if (difficulty === "lower") {
+    enemyLevel = Math.max(1, playerLevel - rnd(1, 2));
+  } else {
+    enemyLevel = playerLevel;
+  }
+
+  const idx = rnd(0, ENEMY_NAMES.length - 1);
+  const hp = 60 + enemyLevel * 30 + rnd(-10, 10);
+
+  return {
+    name: ENEMY_NAMES[idx],
+    level: enemyLevel,
+    hp,
+    maxHp: hp,
+    attack: 8 + enemyLevel * 4 + rnd(-2, 2),
+    defense: 5 + enemyLevel * 3 + rnd(-2, 2),
+    magic: 4 + enemyLevel * 2 + rnd(-2, 2),
+    speed: 7 + enemyLevel * 2 + rnd(-1, 1),
+    avatar: ENEMY_AVATARS[idx],
+  };
+}
+
+export default function DuelSection({ hero: heroBase, battles, maxBattles, regenTimer, onSpendBattle, onDuelEnd, difficulty, onDifficultyChange, playerLevel }: DuelSectionProps) {
   const [phase, setPhase] = useState<BattlePhase>("search");
   const [enemy, setEnemy] = useState<Fighter | null>(null);
   const [playerHp, setPlayerHp] = useState(heroBase.hp);
@@ -70,7 +94,7 @@ export default function DuelSection({ hero: heroBase, battles, maxBattles, regen
   const [isAnimating, setIsAnimating] = useState(false);
   const [playerShake, setPlayerShake] = useState(false);
   const [enemyShake, setEnemyShake] = useState(false);
-  const [reward, setReward] = useState({ xp: 0, gold: 0 });
+  const [reward, setReward] = useState({ xp: 0, gold: 0, silver: 0 });
   const [actionCooldown, setActionCooldown] = useState(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const logId = useRef(0);
@@ -98,8 +122,7 @@ export default function DuelSection({ hero: heroBase, battles, maxBattles, regen
 
   const findEnemy = () => {
     if (battles <= 0) return;
-    const picked = ENEMIES[rnd(0, ENEMIES.length - 1)];
-    const e: Fighter = { ...picked, hp: picked.maxHp };
+    const e = generateEnemy(playerLevel, difficulty);
     setEnemy(e);
     setEnemyHp(e.maxHp);
     setPhase("ready");
@@ -155,8 +178,8 @@ export default function DuelSection({ hero: heroBase, battles, maxBattles, regen
         const goldLost = rnd(10, 30);
         addLog({ turn: t, actor: "system", type: "system", text: `💀 ${player.name} повержен... Потеряно ${xpLost} XP и ${goldLost} золота` });
         setPhase("defeat");
-        setReward({ xp: -xpLost, gold: -goldLost });
-        onDuelEnd("defeat", enemy.name, -xpLost, -goldLost);
+        setReward({ xp: -xpLost, gold: -goldLost, silver: 0 });
+        onDuelEnd("defeat", enemy.name, -xpLost, -goldLost, 0);
         return;
       }
     }
@@ -199,12 +222,37 @@ export default function DuelSection({ hero: heroBase, battles, maxBattles, regen
         setTimeout(() => setEnemyShake(false), 400);
 
         if (curEnemyHp <= 0) {
-          const xpGain = rnd(40, 80) + enemy.level * 20;
-          const goldGain = rnd(20, 50) + enemy.level * 10;
-          addLog({ turn: t, actor: "system", type: "system", text: `🏆 Победа! Получено ${xpGain} XP и ${goldGain} золота!` });
+          let xpGain: number;
+          let goldGain: number;
+          let silverGain: number;
+          let victoryText: string;
+
+          if (difficulty === "higher") {
+            xpGain = rnd(40, 80) * 2 + enemy.level * 20;
+            goldGain = rnd(20, 50);
+            silverGain = rnd(15, 40);
+            victoryText = `🏆 Победа! x2 опыт! Получено ${xpGain} XP, ${goldGain} золота и ${silverGain} серебра!`;
+          } else if (difficulty === "equal") {
+            const gotXp = rnd(1, 100) <= 50;
+            xpGain = gotXp ? rnd(40, 80) + enemy.level * 20 : 0;
+            goldGain = rnd(15, 40);
+            silverGain = rnd(20, 50);
+            if (xpGain > 0) {
+              victoryText = `🏆 Победа! Получено ${xpGain} XP, ${goldGain} золота и ${silverGain} серебра!`;
+            } else {
+              victoryText = `🏆 Победа! Опыт не выпал... Получено ${goldGain} золота и ${silverGain} серебра.`;
+            }
+          } else {
+            xpGain = 0;
+            goldGain = rnd(10, 20);
+            silverGain = rnd(30, 60);
+            victoryText = `🏆 Лёгкая победа! Получено ${goldGain} золота и ${silverGain} серебра.`;
+          }
+
+          addLog({ turn: t, actor: "system", type: "system", text: victoryText });
           setPhase("victory");
-          setReward({ xp: xpGain, gold: goldGain });
-          onDuelEnd("victory", enemy.name, xpGain, goldGain);
+          setReward({ xp: xpGain, gold: goldGain, silver: silverGain });
+          onDuelEnd("victory", enemy.name, xpGain, goldGain, silverGain);
           setIsAnimating(false);
           setActionCooldown(false);
           return;
@@ -246,6 +294,12 @@ export default function DuelSection({ hero: heroBase, battles, maxBattles, regen
     return { bg: "#ffebee", border: "#ef9a9a", text: "#7f0000" };
   };
 
+  const difficultyOptions: { key: "higher" | "equal" | "lower"; label: string; info: string }[] = [
+    { key: "higher", label: "Выше по уровню", info: "x2 опыт" },
+    { key: "equal", label: "Равные", info: "50% шанс опыта" },
+    { key: "lower", label: "Ниже по уровню", info: "только серебро" },
+  ];
+
   return (
     <div className="animate-fade-in">
       <h2 style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--crimson)", fontSize: 22, fontWeight: 700, marginBottom: 14 }}>
@@ -255,12 +309,7 @@ export default function DuelSection({ hero: heroBase, battles, maxBattles, regen
       {/* Счётчик боёв */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, background: "#faf6e8", border: "1px solid var(--parchment-border)", borderRadius: 4, padding: "8px 12px" }}>
         <span style={{ fontSize: 13, color: "var(--text-medium)" }}>Бои:</span>
-        <span style={{ display: "flex", gap: 4 }}>
-          {Array.from({ length: maxBattles }).map((_, i) => (
-            <span key={i} style={{ display: "inline-block", width: 14, height: 14, borderRadius: 3, background: i < battles ? "var(--crimson)" : "#e0d5b8", border: `1px solid ${i < battles ? "#7a1515" : "#c0a870"}`, transition: "background 0.3s" }} />
-          ))}
-        </span>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-dark)" }}>{battles}/{maxBattles}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-dark)" }}>⚔️ {battles}/{maxBattles}</span>
         {regenTimer !== null && battles < maxBattles && (
           <span style={{ fontSize: 11, color: "var(--gold)", marginLeft: 4 }}>+1 через {formatTimer(regenTimer)}</span>
         )}
@@ -273,10 +322,38 @@ export default function DuelSection({ hero: heroBase, battles, maxBattles, regen
       {phase === "search" && (
         <div className="game-panel-inner" style={{ borderRadius: 4, padding: "20px 16px", textAlign: "center" }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>⚔️</div>
-          <p style={{ fontSize: 13, color: "var(--text-medium)", marginBottom: 20, lineHeight: 1.7 }}>
+          <p style={{ fontSize: 13, color: "var(--text-medium)", marginBottom: 16, lineHeight: 1.7 }}>
             Вступи в честный бой с другим героем.<br />
             Победитель получает опыт и золото!
           </p>
+
+          {/* Difficulty selection */}
+          <div style={{ display: "flex", gap: 6, marginBottom: 16, justifyContent: "center" }}>
+            {difficultyOptions.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => onDifficultyChange(opt.key)}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: 4,
+                  fontWeight: 600,
+                  fontSize: 12,
+                  border: difficulty === opt.key ? "2px solid var(--crimson)" : "1px solid var(--parchment-border)",
+                  background: difficulty === opt.key ? "rgba(139,26,26,0.1)" : "#faf6e8",
+                  color: difficulty === opt.key ? "var(--crimson)" : "var(--text-dark)",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  lineHeight: 1.4,
+                  flex: 1,
+                  maxWidth: 130,
+                }}
+              >
+                {opt.label}
+                <div style={{ fontSize: 10, fontWeight: 400, color: "var(--text-medium)", marginTop: 2 }}>{opt.info}</div>
+              </button>
+            ))}
+          </div>
+
           {battles <= 0 ? (
             <div style={{ padding: "10px", borderRadius: 4, background: "#fff5f0", border: "1px solid #fca5a5", fontSize: 13, color: "#9b1c1c" }}>
               ⏳ Боёв не осталось. Восстановление через {regenTimer !== null ? formatTimer(regenTimer) : "—"}
@@ -404,7 +481,11 @@ export default function DuelSection({ hero: heroBase, battles, maxBattles, regen
             <div style={{ textAlign: "center", padding: "16px", background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", border: "2px solid #4ade80", borderRadius: 6 }}>
               <div style={{ fontSize: 36, marginBottom: 8 }}>🏆</div>
               <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "#15803d", marginBottom: 6 }}>Победа!</div>
-              <div style={{ fontSize: 13, color: "#166534", marginBottom: 4 }}>+{reward.xp} XP &nbsp;·&nbsp; +{reward.gold} 🪙 золота</div>
+              <div style={{ fontSize: 13, color: "#166534", marginBottom: 4 }}>
+                {reward.xp > 0 && <>+{reward.xp} XP &nbsp;·&nbsp; </>}
+                +{reward.gold} 🪙 золота
+                {reward.silver > 0 && <> &nbsp;·&nbsp; +{reward.silver} серебра</>}
+              </div>
               <button onClick={reset} style={{ marginTop: 10, padding: "8px 24px", borderRadius: 4, fontWeight: 700, fontSize: 13, background: "var(--crimson)", color: "var(--parchment)", border: "none", cursor: "pointer" }}>
                 Новая дуэль
               </button>

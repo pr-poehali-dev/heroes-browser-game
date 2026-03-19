@@ -24,7 +24,7 @@ export interface HeroStats {
   vitality: number;
 }
 
-const INITIAL_STATS: HeroStats = { strength: 1, defense: 1, agility: 1, mastery: 1, vitality: 1 };
+const INITIAL_STATS: HeroStats = { strength: 5, defense: 5, agility: 5, mastery: 5, vitality: 5 };
 
 const STAT_COST = (level: number) => level * 50; // серебро за улучшение
 
@@ -98,6 +98,23 @@ export default function Index() {
   const [hero] = useState(HERO_BASE);
   const [silver, setSilver] = useState(480);
   const [stats, setStats] = useState<HeroStats>(INITIAL_STATS);
+  const [duelDifficulty, setDuelDifficulty] = useState<"higher" | "equal" | "lower">("equal");
+
+  // HP regen
+  const maxHp = hero.maxHp + stats.vitality * 15;
+  const [currentHp, setCurrentHp] = useState(hero.hp);
+
+  // HP regeneration based on vitality
+  useEffect(() => {
+    const regenInterval = Math.max(5, 30 - stats.vitality * 2) * 1000;
+    const timer = setInterval(() => {
+      setCurrentHp((prev) => {
+        const max = hero.maxHp + stats.vitality * 15;
+        return prev < max ? Math.min(max, prev + 1) : prev;
+      });
+    }, regenInterval);
+    return () => clearInterval(timer);
+  }, [stats.vitality, hero.maxHp]);
 
   // Бои
   const [battles, setBattles] = useState(MAX_BATTLES);
@@ -107,16 +124,11 @@ export default function Index() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Дневник
-  const [diary, setDiary] = useState<DiaryEntry[]>([
-    { id: 1, date: "19 марта", icon: "📍", text: "Прибыл в Поселок. Кузнец дал первое задание — добыть 5 шкур волков.", type: "system" },
-    { id: 2, date: "18 марта", icon: "⚔️", text: "Победил Тёмного Стражника у восточных ворот. Получил 50 опыта.", type: "system" },
-    { id: 3, date: "17 марта", icon: "🛡️", text: "Вступил в ряды Ордена. Теперь я — Рыцарь третьего круга.", type: "system" },
-  ]);
+  const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const diaryIdRef = useRef(10);
 
   const xpPercent = Math.round((hero.xp / hero.xpNext) * 100);
-  const hpPercent = Math.round((hero.hp / hero.maxHp) * 100);
-  const manaPercent = Math.round((hero.mana / hero.maxMana) * 100);
+  const hpPercent = Math.round((currentHp / maxHp) * 100);
 
   // Тик таймера регена
   useEffect(() => {
@@ -164,14 +176,19 @@ export default function Index() {
     setDiary((prev) => [{ ...entry, id: diaryIdRef.current }, ...prev]);
   }, []);
 
-  const onDuelEnd = useCallback((result: "victory" | "defeat", enemyName: string, xp: number, gold: number) => {
+  const onDuelEnd = useCallback((result: "victory" | "defeat", enemyName: string, xp: number, gold: number, silverReward: number) => {
+    setSilver(s => s + silverReward);
     const now = new Date();
     const dateStr = `${now.getDate()} марта, ${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`;
     if (result === "victory") {
+      const parts: string[] = [];
+      if (xp > 0) parts.push(`+${xp} XP`);
+      if (gold > 0) parts.push(`+${gold} 🪙 золота`);
+      if (silverReward > 0) parts.push(`+${silverReward} серебра`);
       addDiaryEntry({
         date: dateStr,
         icon: "🏆",
-        text: `Победа над ${enemyName} в дуэли! Получено +${xp} XP и +${gold} 🪙 золота.`,
+        text: `Победа над ${enemyName} в дуэли! Получено ${parts.join(", ")}.`,
         type: "duel_win",
       });
     } else {
@@ -190,14 +207,6 @@ export default function Index() {
     if (silver < cost) return;
     setSilver((s) => s - cost);
     setStats((prev) => ({ ...prev, [key]: prev[key] + 1 }));
-    const statLabel = STAT_INFO.find((s) => s.key === key)?.label ?? key;
-    const dateStr = new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
-    addDiaryEntry({
-      date: dateStr,
-      icon: "📈",
-      text: `Прокачана характеристика «${statLabel}» до уровня ${currentLevel + 1}. Потрачено ${cost} серебра.`,
-      type: "system",
-    });
   };
 
   const heroForDuel = {
@@ -206,22 +215,28 @@ export default function Index() {
     defense: hero.defense + stats.defense * 2,
     magic: hero.magic + stats.mastery,
     speed: hero.speed + stats.agility,
-    maxHp: hero.maxHp + stats.vitality * 15,
-    hp: hero.hp + stats.vitality * 15,
+    maxHp: maxHp,
+    hp: currentHp,
   };
 
   const renderContent = () => {
     switch (activeSection) {
-      case "diary":
+      case "diary": {
+        const filteredDiary = diary.filter((e) => e.type === "duel_win" || e.type === "duel_lose");
         return (
           <div className="animate-fade-in">
             <h2 style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--crimson)", fontSize: 22, fontWeight: 700, marginBottom: 12 }}>
               📖 Дневник приключений
             </h2>
             <div className="content-stagger" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {diary.map((e) => {
-                const bg = e.type === "duel_win" ? "#f0fdf4" : e.type === "duel_lose" ? "#fff5f5" : "#faf6e8";
-                const border = e.type === "duel_win" ? "#86efac" : e.type === "duel_lose" ? "#fca5a5" : "var(--parchment-border)";
+              {filteredDiary.length === 0 && (
+                <div style={{ textAlign: "center", padding: "20px 0", fontSize: 13, color: "var(--text-medium)" }}>
+                  Записей пока нет. Сражайся в дуэлях!
+                </div>
+              )}
+              {filteredDiary.map((e) => {
+                const bg = e.type === "duel_win" ? "#f0fdf4" : "#fff5f5";
+                const border = e.type === "duel_win" ? "#86efac" : "#fca5a5";
                 return (
                   <div key={e.id} className="game-panel-inner" style={{ borderRadius: 4, padding: "9px 13px", background: bg, border: `1px solid ${border}` }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
@@ -235,6 +250,7 @@ export default function Index() {
             </div>
           </div>
         );
+      }
 
       case "quests":
         return (
@@ -274,6 +290,9 @@ export default function Index() {
             regenTimer={regenTimer}
             onSpendBattle={spendBattle}
             onDuelEnd={onDuelEnd}
+            difficulty={duelDifficulty}
+            onDifficultyChange={setDuelDifficulty}
+            playerLevel={hero.level}
           />
         );
 
@@ -332,25 +351,6 @@ export default function Index() {
                   </div>
                 );
               })}
-            </div>
-
-            <div className="game-panel-inner" style={{ borderRadius: 4, padding: "10px 13px", marginTop: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-dark)", marginBottom: 8 }}>Итоговые боевые характеристики</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                {[
-                  { label: "Атака", value: heroForDuel.attack, icon: "⚔️" },
-                  { label: "Защита", value: heroForDuel.defense, icon: "🛡️" },
-                  { label: "Магия", value: heroForDuel.magic, icon: "✨" },
-                  { label: "Скорость", value: heroForDuel.speed, icon: "💨" },
-                  { label: "Макс. HP", value: heroForDuel.maxHp, icon: "❤️" },
-                ].map((stat) => (
-                  <div key={stat.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-medium)" }}>
-                    <span>{stat.icon}</span>
-                    <span>{stat.label}:</span>
-                    <span style={{ fontWeight: 700, color: "var(--text-dark)" }}>{stat.value}</span>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         );
@@ -432,9 +432,6 @@ export default function Index() {
     }
   };
 
-  // Рендер иконок боёв
-  const battleDots = Array.from({ length: MAX_BATTLES }).map((_, i) => i < battles);
-
   return (
     <div style={{ minHeight: "100vh", background: "var(--parchment)" }}>
       {/* Header */}
@@ -445,31 +442,16 @@ export default function Index() {
 
         {/* Stats bar */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "8px 12px" }}>
-          <div className="stat-badge"><span>👤</span><span style={{ fontWeight: 600 }}>{hero.name}</span></div>
+          <div className="stat-badge" onClick={() => setActiveSection("hero")} style={{ cursor: "pointer" }}><span>👤</span><span style={{ fontWeight: 600 }}>{hero.name}</span></div>
           <div className="stat-badge"><span>⭐</span><span>{hero.level} ур.</span></div>
-          <div className="stat-badge"><span>❤️</span><span>{hero.hp}/{heroForDuel.maxHp}</span></div>
-          <div className="stat-badge"><span>💧</span><span>{hero.mana}/{hero.maxMana}</span></div>
+          <div className="stat-badge"><span>❤️</span><span>{currentHp}/{maxHp}</span></div>
+          <div className="stat-badge"><span>🥈</span><span>{silver}</span></div>
           <div className="stat-badge"><span>🪙</span><span>{hero.gold}</span></div>
           <div className="stat-badge"><span>💎</span><span>{hero.gems}</span></div>
           {/* Счётчик боёв */}
           <div className="stat-badge" style={{ gap: 5, alignItems: "center" }}>
             <span title="Количество боёв">⚔️</span>
-            <span style={{ display: "flex", gap: 3, alignItems: "center" }}>
-              {battleDots.map((filled, i) => (
-                <span
-                  key={i}
-                  style={{
-                    display: "inline-block",
-                    width: 9,
-                    height: 9,
-                    borderRadius: "50%",
-                    background: filled ? "#f5c842" : "rgba(255,255,255,0.2)",
-                    border: `1px solid ${filled ? "#c8901a" : "rgba(255,255,255,0.3)"}`,
-                    transition: "background 0.3s",
-                  }}
-                />
-              ))}
-            </span>
+            <span style={{ fontWeight: 600 }}>{battles}/{MAX_BATTLES}</span>
             {regenTimer !== null && battles < MAX_BATTLES && (
               <span style={{ fontSize: 10, color: "#f0d080", marginLeft: 2 }}>+{formatTimer(regenTimer)}</span>
             )}
@@ -477,7 +459,7 @@ export default function Index() {
         </div>
 
         {/* Progress bars */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, padding: "0 12px 10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "0 12px 10px" }}>
           <div>
             <div style={{ fontSize: 10, color: "#f0d080", marginBottom: 3 }}>⚡ XP {hero.xp}/{hero.xpNext}</div>
             <div className="xp-bar"><div className="xp-fill" style={{ width: `${xpPercent}%` }} /></div>
@@ -485,10 +467,6 @@ export default function Index() {
           <div>
             <div style={{ fontSize: 10, color: "#f0d080", marginBottom: 3 }}>❤️ HP {hpPercent}%</div>
             <div className="xp-bar"><div className="hp-fill" style={{ width: `${hpPercent}%` }} /></div>
-          </div>
-          <div>
-            <div style={{ fontSize: 10, color: "#f0d080", marginBottom: 3 }}>💧 Мана {manaPercent}%</div>
-            <div className="xp-bar"><div className="mana-fill" style={{ width: `${manaPercent}%` }} /></div>
           </div>
         </div>
       </header>
@@ -512,20 +490,6 @@ export default function Index() {
                 Герой <strong>{hero.name}</strong>, уровень <strong>{hero.level}</strong>.<br />
                 До следующего уровня: <strong>{hero.xpNext - hero.xp} XP</strong>
               </p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 6, marginTop: 12 }}>
-                {[
-                  { label: "Атака", value: heroForDuel.attack, icon: "⚔️" },
-                  { label: "Защита", value: heroForDuel.defense, icon: "🛡️" },
-                  { label: "Магия", value: heroForDuel.magic, icon: "✨" },
-                  { label: "Скорость", value: heroForDuel.speed, icon: "💨" },
-                ].map((s) => (
-                  <div key={s.label} style={{ background: "rgba(139,26,26,0.06)", border: "1px solid var(--parchment-border)", borderRadius: 3, padding: "6px 4px", textAlign: "center" }}>
-                    <div style={{ fontSize: 16, marginBottom: 2 }}>{s.icon}</div>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: "var(--crimson)" }}>{s.value}</div>
-                    <div style={{ fontSize: 10, color: "var(--text-medium)" }}>{s.label}</div>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
 
