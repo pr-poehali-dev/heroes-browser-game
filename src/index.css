@@ -4,89 +4,50 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 45 40% 96%;
+    --foreground: 20 15% 15%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 42 35% 98%;
+    --card-foreground: 20 15% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 42 35% 98%;
+    --popover-foreground: 20 15% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 0 65% 35%;
+    --primary-foreground: 42 60% 95%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 40 30% 88%;
+    --secondary-foreground: 20 15% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 42 20% 90%;
+    --muted-foreground: 20 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 35 70% 50%;
+    --accent-foreground: 20 15% 10%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 42 60% 95%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 35 25% 78%;
+    --input: 35 25% 78%;
+    --ring: 0 65% 35%;
 
-    --radius: 0.5rem;
+    --radius: 0.25rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Game-specific variables */
+    --crimson: #8b1a1a;
+    --crimson-dark: #5c0f0f;
+    --crimson-light: #a83232;
+    --parchment: #f5f0e0;
+    --parchment-dark: #ede4c8;
+    --parchment-border: #c8a96e;
+    --gold: #c9972a;
+    --gold-light: #e8b84b;
+    --text-dark: #2a1a0a;
+    --text-medium: #5a3a1a;
+    --hp-red: #cc2222;
+    --mana-blue: #2244cc;
+    --xp-green: #228822;
   }
 }
 
@@ -97,5 +58,217 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: "Golos Text", sans-serif;
+    background-color: var(--parchment);
+    color: var(--text-dark);
   }
+}
+
+/* Game UI styles */
+.game-header {
+  background: linear-gradient(
+    180deg,
+    var(--crimson-dark) 0%,
+    var(--crimson) 60%,
+    #7a1515 100%
+  );
+  border-bottom: 3px solid var(--gold);
+}
+
+.game-title {
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--gold-light);
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(200, 150, 40, 0.4);
+}
+
+.stat-bar {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  padding: 2px 10px;
+  font-family: "Golos Text", sans-serif;
+  font-size: 13px;
+  color: #f0e0b0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.game-panel {
+  background: var(--parchment);
+  border: 2px solid var(--parchment-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 2px 8px rgba(100, 60, 20, 0.15);
+}
+
+.game-panel-inner {
+  background: linear-gradient(180deg, #faf6e8 0%, #f2ead0 100%);
+  border: 1px solid #d4b87a;
+}
+
+.nav-link {
+  font-family: "Golos Text", sans-serif;
+  font-size: 14px;
+  color: var(--text-dark);
+  padding: 5px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.15s ease;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.nav-link:hover {
+  color: var(--crimson);
+}
+
+.nav-link.active {
+  color: var(--crimson);
+  font-weight: 600;
+}
+
+.bottom-nav {
+  background: linear-gradient(180deg, #c8a96e 0%, #b8944e 100%);
+  border-top: 2px solid var(--crimson);
+  border-bottom: 2px solid var(--crimson);
+}
+
+.bottom-nav a {
+  color: var(--crimson-dark);
+  font-size: 13px;
+  font-family: "Golos Text", sans-serif;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.15s;
+}
+
+.bottom-nav a:hover {
+  color: #000;
+}
+
+.game-footer {
+  background: linear-gradient(
+    180deg,
+    var(--crimson) 0%,
+    var(--crimson-dark) 100%
+  );
+  color: #f0d080;
+  font-size: 12px;
+  font-family: "Golos Text", sans-serif;
+}
+
+.xp-bar {
+  height: 8px;
+  background: #d0c090;
+  border: 1px solid #a08040;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2a8a2a, #50cc50);
+  transition: width 0.5s ease;
+}
+
+.hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #aa1111, #ee3333);
+  transition: width 0.5s ease;
+}
+
+.mana-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1133aa, #3366ee);
+  transition: width 0.5s ease;
+}
+
+.section-divider {
+  border: none;
+  border-top: 1px solid var(--parchment-border);
+  margin: 8px 0;
+}
+
+.welcome-box {
+  background: linear-gradient(135deg, #fffef5 0%, #faf4dc 100%);
+  border: 1px solid #d4b87a;
+  border-radius: 3px;
+  padding: 16px;
+  text-align: center;
+}
+
+.stat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 200, 100, 0.3);
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: #f5e0a0;
+  font-family: "Golos Text", sans-serif;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.35s ease forwards;
+}
+
+.content-stagger > * {
+  animation: fade-in 0.3s ease both;
+}
+
+.content-stagger > *:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.content-stagger > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.content-stagger > *:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.content-stagger > *:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.content-stagger > *:nth-child(5) {
+  animation-delay: 0.25s;
+}
+.content-stagger > *:nth-child(6) {
+  animation-delay: 0.3s;
+}
+.content-stagger > *:nth-child(7) {
+  animation-delay: 0.35s;
+}
+.content-stagger > *:nth-child(8) {
+  animation-delay: 0.4s;
+}
+.content-stagger > *:nth-child(9) {
+  animation-delay: 0.45s;
+}
+.content-stagger > *:nth-child(10) {
+  animation-delay: 0.5s;
+}
+.content-stagger > *:nth-child(11) {
+  animation-delay: 0.55s;
+}
+.content-stagger > *:nth-child(12) {
+  animation-delay: 0.6s;
 }
