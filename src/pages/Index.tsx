@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
+import DuelSection from "@/components/DuelSection";
 
 const BANNER_URL =
   "https://cdn.poehali.dev/projects/e03d01dd-c207-488c-aa14-9e40184b6c24/files/840de9ee-8516-4aab-88ca-92499cb030ec.jpg";
@@ -123,35 +124,7 @@ export default function Index() {
         );
 
       case "duel":
-        return (
-          <div className="animate-fade-in" style={{ textAlign: "center" }}>
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--crimson)", fontSize: 22, fontWeight: 700, marginBottom: 16 }}>
-              ⚔️ Дуэль
-            </h2>
-            <div className="game-panel-inner" style={{ borderRadius: 4, padding: "20px 16px", marginBottom: 16 }}>
-              <p style={{ fontSize: 13, color: "var(--text-medium)", marginBottom: 16 }}>
-                Вступи в честный бой с другим героем. Победитель получает опыт и золото!
-              </p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-                <div style={{ background: "#fff5f5", border: "1px solid #fca5a5", borderRadius: 4, padding: 12, textAlign: "center" }}>
-                  <div style={{ fontSize: 28, marginBottom: 4 }}>🗡️</div>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{hero.name}</div>
-                  <div style={{ fontSize: 11, color: "var(--text-medium)" }}>Уровень {hero.level}</div>
-                </div>
-                <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 4, padding: 12, textAlign: "center" }}>
-                  <div style={{ fontSize: 28, marginBottom: 4 }}>🛡️</div>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>Противник</div>
-                  <div style={{ fontSize: 11, color: "var(--text-medium)" }}>Поиск...</div>
-                </div>
-              </div>
-              <button
-                style={{ width: "100%", padding: "8px 16px", borderRadius: 4, fontWeight: 600, fontSize: 14, background: "var(--crimson)", color: "var(--parchment)", border: "none", cursor: "pointer" }}
-              >
-                ⚔️ Найти противника
-              </button>
-            </div>
-          </div>
-        );
+        return <DuelSection hero={hero} />;
 
       case "top":
         return (

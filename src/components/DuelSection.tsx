@@ -1,0 +1,396 @@
+import { useState, useRef, useEffect } from "react";
+
+interface Fighter {
+  name: string;
+  level: number;
+  hp: number;
+  maxHp: number;
+  attack: number;
+  defense: number;
+  magic: number;
+  speed: number;
+  avatar: string;
+}
+
+interface BattleLog {
+  id: number;
+  turn: number;
+  actor: "player" | "enemy";
+  type: "attack" | "magic" | "miss" | "crit" | "defend" | "system";
+  text: string;
+  damage?: number;
+}
+
+const ENEMIES: Fighter[] = [
+  { name: "Громозека", level: 3, hp: 140, maxHp: 140, attack: 18, defense: 12, magic: 5, speed: 8, avatar: "👹" },
+  { name: "Ведьмак77", level: 2, hp: 110, maxHp: 110, attack: 14, defense: 9, magic: 14, speed: 12, avatar: "🧙" },
+  { name: "Стальной", level: 2, hp: 130, maxHp: 130, attack: 16, defense: 16, magic: 3, speed: 7, avatar: "⚔️" },
+  { name: "ТёмнаяЗвезда", level: 1, hp: 90, maxHp: 90, attack: 13, defense: 7, magic: 18, speed: 14, avatar: "🌑" },
+  { name: "Скиталец", level: 1, hp: 85, maxHp: 85, attack: 11, defense: 10, magic: 8, speed: 11, avatar: "🗺️" },
+];
+
+type BattlePhase = "search" | "ready" | "fighting" | "victory" | "defeat";
+
+const rnd = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+interface HeroProps {
+  name: string;
+  level: number;
+  hp: number;
+  maxHp: number;
+  attack: number;
+  defense: number;
+  magic: number;
+  speed: number;
+}
+
+export default function DuelSection({ hero: heroBase }: { hero: HeroProps }) {
+  const [phase, setPhase] = useState<BattlePhase>("search");
+  const [enemy, setEnemy] = useState<Fighter | null>(null);
+  const [playerHp, setPlayerHp] = useState(heroBase.hp);
+  const [enemyHp, setEnemyHp] = useState(0);
+  const [logs, setLogs] = useState<BattleLog[]>([]);
+  const [turn, setTurn] = useState(1);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [playerShake, setPlayerShake] = useState(false);
+  const [enemyShake, setEnemyShake] = useState(false);
+  const [reward, setReward] = useState({ xp: 0, gold: 0 });
+  const [actionCooldown, setActionCooldown] = useState(false);
+  const logsEndRef = useRef<HTMLDivElement>(null);
+  const logId = useRef(0);
+
+  const player: Fighter = {
+    name: heroBase.name,
+    level: heroBase.level,
+    hp: playerHp,
+    maxHp: heroBase.maxHp,
+    attack: heroBase.attack,
+    defense: heroBase.defense,
+    magic: heroBase.magic,
+    speed: heroBase.speed,
+    avatar: "🗡️",
+  };
+
+  useEffect(() => {
+    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [logs]);
+
+  const addLog = (entry: Omit<BattleLog, "id">) => {
+    logId.current += 1;
+    setLogs((prev) => [...prev, { ...entry, id: logId.current }]);
+  };
+
+  const findEnemy = () => {
+    const picked = ENEMIES[rnd(0, ENEMIES.length - 1)];
+    const e: Fighter = { ...picked, hp: picked.maxHp };
+    setEnemy(e);
+    setEnemyHp(e.maxHp);
+    setPhase("ready");
+    setLogs([]);
+    setPlayerHp(heroBase.hp);
+    setTurn(1);
+  };
+
+  const startBattle = () => {
+    setPhase("fighting");
+    addLog({ turn: 0, actor: "system", type: "system", text: `⚔️ Дуэль начата! ${player.name} против ${enemy!.name}!` });
+    if (player.speed >= enemy!.speed) {
+      addLog({ turn: 0, actor: "system", type: "system", text: `${player.name} действует первым (скорость ${player.speed} vs ${enemy!.speed})` });
+    } else {
+      addLog({ turn: 0, actor: "system", type: "system", text: `${enemy!.name} действует первым (скорость ${enemy!.speed} vs ${player.speed})` });
+    }
+  };
+
+  const calcDamage = (attacker: Fighter, defender: Fighter, type: "attack" | "magic"): { dmg: number; isCrit: boolean; isMiss: boolean } => {
+    const missChance = Math.max(5, 20 - attacker.speed + defender.speed);
+    if (rnd(1, 100) <= missChance) return { dmg: 0, isCrit: false, isMiss: true };
+    const base = type === "attack" ? attacker.attack : attacker.magic * 1.5;
+    const reduction = type === "attack" ? defender.defense * 0.6 : defender.defense * 0.2;
+    const raw = Math.max(1, base - reduction + rnd(-3, 4));
+    const isCrit = rnd(1, 100) <= 20;
+    return { dmg: Math.round(isCrit ? raw * 1.8 : raw), isCrit, isMiss: false };
+  };
+
+  const enemyTurn = (curEnemyHp: number, curPlayerHp: number, t: number) => {
+    if (!enemy) return;
+    const useMagic = enemy.magic > enemy.attack * 0.7 && rnd(1, 100) <= 40;
+    const { dmg, isCrit, isMiss } = calcDamage(enemy, player, useMagic ? "magic" : "attack");
+
+    if (isMiss) {
+      addLog({ turn: t, actor: "enemy", type: "miss", text: `${enemy.name} промахнулся!` });
+    } else {
+      const typeLabel = useMagic ? "магией" : "атакой";
+      const critLabel = isCrit ? " 💥 КРИТИЧЕСКИЙ УДАР!" : "";
+      addLog({
+        turn: t, actor: "enemy",
+        type: isCrit ? "crit" : (useMagic ? "magic" : "attack"),
+        text: `${enemy.avatar} ${enemy.name} наносит ${dmg} урона ${typeLabel}!${critLabel}`,
+        damage: dmg,
+      });
+      const newPlayerHp = Math.max(0, curPlayerHp - dmg);
+      setPlayerHp(newPlayerHp);
+      setPlayerShake(true);
+      setTimeout(() => setPlayerShake(false), 400);
+
+      if (newPlayerHp <= 0) {
+        const xpLost = rnd(5, 15);
+        const goldLost = rnd(10, 30);
+        addLog({ turn: t, actor: "system", type: "system", text: `💀 ${player.name} повержен... Потеряно ${xpLost} XP и ${goldLost} золота` });
+        setPhase("defeat");
+        setReward({ xp: -xpLost, gold: -goldLost });
+        return;
+      }
+    }
+    setTurn(t + 1);
+    setIsAnimating(false);
+    setActionCooldown(false);
+  };
+
+  const playerAction = (actionType: "attack" | "magic" | "defend") => {
+    if (!enemy || phase !== "fighting" || isAnimating || actionCooldown) return;
+    setIsAnimating(true);
+    setActionCooldown(true);
+
+    let curEnemyHp = enemyHp;
+    let curPlayerHp = playerHp;
+    const t = turn;
+
+    if (actionType === "defend") {
+      const healed = rnd(5, 12);
+      const newHp = Math.min(heroBase.maxHp, curPlayerHp + healed);
+      setPlayerHp(newHp);
+      curPlayerHp = newHp;
+      addLog({ turn: t, actor: "player", type: "defend", text: `🛡️ ${player.name} принимает защитную стойку и восстанавливает ${healed} HP` });
+    } else {
+      const { dmg, isCrit, isMiss } = calcDamage(player, enemy, actionType);
+      if (isMiss) {
+        addLog({ turn: t, actor: "player", type: "miss", text: `${player.name} промахнулся!` });
+      } else {
+        const typeLabel = actionType === "magic" ? "🔮 магическим ударом" : "⚔️ атакой";
+        const critLabel = isCrit ? " 💥 КРИТИЧЕСКИЙ УДАР!" : "";
+        addLog({
+          turn: t, actor: "player",
+          type: isCrit ? "crit" : actionType,
+          text: `🗡️ ${player.name} наносит ${dmg} урона ${typeLabel}!${critLabel}`,
+          damage: dmg,
+        });
+        curEnemyHp = Math.max(0, curEnemyHp - dmg);
+        setEnemyHp(curEnemyHp);
+        setEnemyShake(true);
+        setTimeout(() => setEnemyShake(false), 400);
+
+        if (curEnemyHp <= 0) {
+          const xpGain = rnd(40, 80) + enemy.level * 20;
+          const goldGain = rnd(20, 50) + enemy.level * 10;
+          addLog({ turn: t, actor: "system", type: "system", text: `🏆 Победа! Получено ${xpGain} XP и ${goldGain} золота!` });
+          setPhase("victory");
+          setReward({ xp: xpGain, gold: goldGain });
+          setIsAnimating(false);
+          setActionCooldown(false);
+          return;
+        }
+      }
+    }
+
+    setTimeout(() => enemyTurn(curEnemyHp, curPlayerHp, t), 700);
+  };
+
+  const reset = () => {
+    setPhase("search");
+    setEnemy(null);
+    setLogs([]);
+    setTurn(1);
+    setPlayerHp(heroBase.hp);
+    setEnemyHp(0);
+    setActionCooldown(false);
+    setIsAnimating(false);
+  };
+
+  const hpBar = (hp: number, maxHp: number, color: string) => (
+    <div style={{ height: 10, background: "#d0c090", border: "1px solid #a08040", borderRadius: 3, overflow: "hidden", width: "100%" }}>
+      <div style={{ height: "100%", width: `${Math.max(0, (hp / maxHp) * 100)}%`, background: color, transition: "width 0.4s ease" }} />
+    </div>
+  );
+
+  const logColor = (log: BattleLog) => {
+    if (log.type === "system") return { bg: "#f0e8d0", border: "#c8a96e", text: "#5a3a1a" };
+    if (log.actor === "player") {
+      if (log.type === "crit") return { bg: "#fff3e0", border: "#fb8c00", text: "#6d3000" };
+      if (log.type === "magic") return { bg: "#ede7f6", border: "#9575cd", text: "#311b92" };
+      if (log.type === "miss") return { bg: "#f5f5f5", border: "#bdbdbd", text: "#616161" };
+      if (log.type === "defend") return { bg: "#e8f5e9", border: "#66bb6a", text: "#1b5e20" };
+      return { bg: "#fff8e1", border: "#ffca28", text: "#4a3000" };
+    }
+    if (log.type === "crit") return { bg: "#fce4ec", border: "#e57373", text: "#7f0000" };
+    if (log.type === "miss") return { bg: "#f5f5f5", border: "#bdbdbd", text: "#616161" };
+    return { bg: "#ffebee", border: "#ef9a9a", text: "#7f0000" };
+  };
+
+  return (
+    <div className="animate-fade-in">
+      <h2 style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--crimson)", fontSize: 22, fontWeight: 700, marginBottom: 14 }}>
+        ⚔️ Дуэль
+      </h2>
+
+      {/* SEARCH */}
+      {phase === "search" && (
+        <div className="game-panel-inner" style={{ borderRadius: 4, padding: "20px 16px", textAlign: "center" }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>⚔️</div>
+          <p style={{ fontSize: 13, color: "var(--text-medium)", marginBottom: 20, lineHeight: 1.7 }}>
+            Вступи в честный бой с другим героем.<br />
+            Победитель получает опыт и золото!
+          </p>
+          <button onClick={findEnemy} style={{ padding: "10px 28px", borderRadius: 4, fontWeight: 700, fontSize: 14, background: "var(--crimson)", color: "var(--parchment)", border: "none", cursor: "pointer", fontFamily: "'Golos Text', sans-serif" }}>
+            🔍 Найти противника
+          </button>
+        </div>
+      )}
+
+      {/* READY */}
+      {phase === "ready" && enemy && (
+        <div className="animate-fade-in">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 8, alignItems: "center", marginBottom: 16 }}>
+            {/* Player card */}
+            <div className="game-panel-inner" style={{ borderRadius: 4, padding: 12, textAlign: "center", border: "2px solid #c8a96e" }}>
+              <div style={{ fontSize: 36, marginBottom: 4 }}>{player.avatar}</div>
+              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{player.name}</div>
+              <div style={{ fontSize: 11, color: "var(--gold)", marginBottom: 8 }}>Уровень {player.level}</div>
+              {hpBar(playerHp, player.maxHp, "linear-gradient(90deg,#aa1111,#ee3333)")}
+              <div style={{ fontSize: 10, color: "var(--text-medium)", marginTop: 4 }}>{playerHp}/{player.maxHp} HP</div>
+              <div style={{ marginTop: 8, fontSize: 11, color: "var(--text-medium)", display: "flex", justifyContent: "center", gap: 8 }}>
+                <span>⚔️{player.attack}</span>
+                <span>🛡️{player.defense}</span>
+                <span>✨{player.magic}</span>
+              </div>
+            </div>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 700, color: "var(--crimson)", textAlign: "center" }}>VS</div>
+            {/* Enemy card */}
+            <div className="game-panel-inner" style={{ borderRadius: 4, padding: 12, textAlign: "center", border: "2px solid #e57373" }}>
+              <div style={{ fontSize: 36, marginBottom: 4 }}>{enemy.avatar}</div>
+              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{enemy.name}</div>
+              <div style={{ fontSize: 11, color: "var(--gold)", marginBottom: 8 }}>Уровень {enemy.level}</div>
+              {hpBar(enemyHp, enemy.maxHp, "linear-gradient(90deg,#aa1111,#ee3333)")}
+              <div style={{ fontSize: 10, color: "var(--text-medium)", marginTop: 4 }}>{enemyHp}/{enemy.maxHp} HP</div>
+              <div style={{ marginTop: 8, fontSize: 11, color: "var(--text-medium)", display: "flex", justifyContent: "center", gap: 8 }}>
+                <span>⚔️{enemy.attack}</span>
+                <span>🛡️{enemy.defense}</span>
+                <span>✨{enemy.magic}</span>
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={startBattle} style={{ flex: 1, padding: "10px", borderRadius: 4, fontWeight: 700, fontSize: 14, background: "var(--crimson)", color: "var(--parchment)", border: "none", cursor: "pointer" }}>
+              ⚔️ Начать бой!
+            </button>
+            <button onClick={findEnemy} style={{ padding: "10px 14px", borderRadius: 4, fontWeight: 600, fontSize: 13, background: "#f5f0e0", color: "var(--text-dark)", border: "1px solid var(--parchment-border)", cursor: "pointer" }}>
+              🔄 Другой
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* FIGHTING */}
+      {(phase === "fighting" || phase === "victory" || phase === "defeat") && enemy && (
+        <div className="animate-fade-in">
+          {/* HP bars */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 8, alignItems: "center", marginBottom: 12 }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 3, color: "var(--text-dark)" }}>
+                <span style={playerShake ? { display: "inline-block", animation: "shake 0.3s ease" } : {}}>{player.avatar} {player.name}</span>
+              </div>
+              {hpBar(playerHp, player.maxHp, "linear-gradient(90deg,#aa1111,#ee3333)")}
+              <div style={{ fontSize: 10, color: "var(--text-medium)", marginTop: 2 }}>{Math.max(0, playerHp)}/{player.maxHp} HP</div>
+            </div>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: "var(--crimson)" }}>⚔️</div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 3, color: "var(--text-dark)" }}>
+                <span style={enemyShake ? { display: "inline-block", animation: "shake 0.3s ease" } : {}}>{enemy.avatar} {enemy.name}</span>
+              </div>
+              {hpBar(enemyHp, enemy.maxHp, "linear-gradient(90deg,#aa1111,#ee3333)")}
+              <div style={{ fontSize: 10, color: "var(--text-medium)", marginTop: 2 }}>{Math.max(0, enemyHp)}/{enemy.maxHp} HP</div>
+            </div>
+          </div>
+
+          {/* Battle log */}
+          <div className="game-panel-inner" style={{ borderRadius: 4, padding: "8px 10px", marginBottom: 10, maxHeight: 220, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+            {logs.length === 0 && <div style={{ fontSize: 12, color: "var(--text-medium)", textAlign: "center", padding: "8px 0" }}>Лог боя пуст</div>}
+            {logs.map((log) => {
+              const c = logColor(log);
+              return (
+                <div key={log.id} style={{ fontSize: 12, padding: "4px 8px", borderRadius: 3, background: c.bg, border: `1px solid ${c.border}`, color: c.text, lineHeight: 1.5 }}>
+                  {log.turn > 0 && <span style={{ opacity: 0.5, fontSize: 10, marginRight: 4 }}>Ход {log.turn}.</span>}
+                  {log.text}
+                </div>
+              );
+            })}
+            <div ref={logsEndRef} />
+          </div>
+
+          {/* Actions */}
+          {phase === "fighting" && (
+            <div>
+              <div style={{ fontSize: 11, color: "var(--text-medium)", marginBottom: 6, textAlign: "center" }}>Ход {turn} — выбери действие:</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                <button
+                  onClick={() => playerAction("attack")}
+                  disabled={actionCooldown}
+                  style={{ padding: "10px 6px", borderRadius: 4, fontWeight: 600, fontSize: 12, background: actionCooldown ? "#ddd" : "var(--crimson)", color: actionCooldown ? "#999" : "var(--parchment)", border: "none", cursor: actionCooldown ? "not-allowed" : "pointer", transition: "all 0.2s" }}
+                >
+                  ⚔️ Атака
+                </button>
+                <button
+                  onClick={() => playerAction("magic")}
+                  disabled={actionCooldown}
+                  style={{ padding: "10px 6px", borderRadius: 4, fontWeight: 600, fontSize: 12, background: actionCooldown ? "#ddd" : "#4a2878", color: actionCooldown ? "#999" : "#f0e0ff", border: "none", cursor: actionCooldown ? "not-allowed" : "pointer", transition: "all 0.2s" }}
+                >
+                  🔮 Магия
+                </button>
+                <button
+                  onClick={() => playerAction("defend")}
+                  disabled={actionCooldown}
+                  style={{ padding: "10px 6px", borderRadius: 4, fontWeight: 600, fontSize: 12, background: actionCooldown ? "#ddd" : "#2a5a2a", color: actionCooldown ? "#999" : "#d0ffd0", border: "none", cursor: actionCooldown ? "not-allowed" : "pointer", transition: "all 0.2s" }}
+                >
+                  🛡️ Защита
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Victory */}
+          {phase === "victory" && (
+            <div style={{ textAlign: "center", padding: "16px", background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", border: "2px solid #4ade80", borderRadius: 6 }}>
+              <div style={{ fontSize: 36, marginBottom: 8 }}>🏆</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "#15803d", marginBottom: 6 }}>Победа!</div>
+              <div style={{ fontSize: 13, color: "#166534", marginBottom: 4 }}>+{reward.xp} XP &nbsp;·&nbsp; +{reward.gold} 🪙 золота</div>
+              <button onClick={reset} style={{ marginTop: 10, padding: "8px 24px", borderRadius: 4, fontWeight: 700, fontSize: 13, background: "var(--crimson)", color: "var(--parchment)", border: "none", cursor: "pointer" }}>
+                Новая дуэль
+              </button>
+            </div>
+          )}
+
+          {/* Defeat */}
+          {phase === "defeat" && (
+            <div style={{ textAlign: "center", padding: "16px", background: "linear-gradient(135deg,#fff5f5,#fce4ec)", border: "2px solid #ef9a9a", borderRadius: 6 }}>
+              <div style={{ fontSize: 36, marginBottom: 8 }}>💀</div>
+              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "#9b1c1c", marginBottom: 6 }}>Поражение...</div>
+              <div style={{ fontSize: 13, color: "#7f1d1d", marginBottom: 4 }}>{reward.xp} XP &nbsp;·&nbsp; {reward.gold} 🪙 золота</div>
+              <button onClick={reset} style={{ marginTop: 10, padding: "8px 24px", borderRadius: 4, fontWeight: 700, fontSize: 13, background: "#7f1d1d", color: "#fef2f2", border: "none", cursor: "pointer" }}>
+                Попробовать снова
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes shake {
+          0%,100% { transform: translateX(0); }
+          20% { transform: translateX(-6px); }
+          40% { transform: translateX(6px); }
+          60% { transform: translateX(-4px); }
+          80% { transform: translateX(4px); }
+        }
+      `}</style>
+    </div>
+  );
+}
