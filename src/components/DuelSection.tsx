@@ -44,7 +44,23 @@ interface HeroProps {
   speed: number;
 }
 
-export default function DuelSection({ hero: heroBase }: { hero: HeroProps }) {
+interface DuelSectionProps {
+  hero: HeroProps;
+  battles: number;
+  maxBattles: number;
+  regenTimer: number | null;
+  onSpendBattle: () => boolean;
+  onDuelEnd: (result: "victory" | "defeat", enemyName: string, xp: number, gold: number) => void;
+}
+
+function formatTimer(ms: number) {
+  const total = Math.ceil(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+export default function DuelSection({ hero: heroBase, battles, maxBattles, regenTimer, onSpendBattle, onDuelEnd }: DuelSectionProps) {
   const [phase, setPhase] = useState<BattlePhase>("search");
   const [enemy, setEnemy] = useState<Fighter | null>(null);
   const [playerHp, setPlayerHp] = useState(heroBase.hp);
@@ -81,6 +97,7 @@ export default function DuelSection({ hero: heroBase }: { hero: HeroProps }) {
   };
 
   const findEnemy = () => {
+    if (battles <= 0) return;
     const picked = ENEMIES[rnd(0, ENEMIES.length - 1)];
     const e: Fighter = { ...picked, hp: picked.maxHp };
     setEnemy(e);
@@ -92,6 +109,7 @@ export default function DuelSection({ hero: heroBase }: { hero: HeroProps }) {
   };
 
   const startBattle = () => {
+    if (!onSpendBattle()) return;
     setPhase("fighting");
     addLog({ turn: 0, actor: "system", type: "system", text: `⚔️ Дуэль начата! ${player.name} против ${enemy!.name}!` });
     if (player.speed >= enemy!.speed) {
@@ -138,6 +156,7 @@ export default function DuelSection({ hero: heroBase }: { hero: HeroProps }) {
         addLog({ turn: t, actor: "system", type: "system", text: `💀 ${player.name} повержен... Потеряно ${xpLost} XP и ${goldLost} золота` });
         setPhase("defeat");
         setReward({ xp: -xpLost, gold: -goldLost });
+        onDuelEnd("defeat", enemy.name, -xpLost, -goldLost);
         return;
       }
     }
@@ -185,6 +204,7 @@ export default function DuelSection({ hero: heroBase }: { hero: HeroProps }) {
           addLog({ turn: t, actor: "system", type: "system", text: `🏆 Победа! Получено ${xpGain} XP и ${goldGain} золота!` });
           setPhase("victory");
           setReward({ xp: xpGain, gold: goldGain });
+          onDuelEnd("victory", enemy.name, xpGain, goldGain);
           setIsAnimating(false);
           setActionCooldown(false);
           return;
@@ -232,6 +252,23 @@ export default function DuelSection({ hero: heroBase }: { hero: HeroProps }) {
         ⚔️ Дуэль
       </h2>
 
+      {/* Счётчик боёв */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, background: "#faf6e8", border: "1px solid var(--parchment-border)", borderRadius: 4, padding: "8px 12px" }}>
+        <span style={{ fontSize: 13, color: "var(--text-medium)" }}>Бои:</span>
+        <span style={{ display: "flex", gap: 4 }}>
+          {Array.from({ length: maxBattles }).map((_, i) => (
+            <span key={i} style={{ display: "inline-block", width: 14, height: 14, borderRadius: 3, background: i < battles ? "var(--crimson)" : "#e0d5b8", border: `1px solid ${i < battles ? "#7a1515" : "#c0a870"}`, transition: "background 0.3s" }} />
+          ))}
+        </span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-dark)" }}>{battles}/{maxBattles}</span>
+        {regenTimer !== null && battles < maxBattles && (
+          <span style={{ fontSize: 11, color: "var(--gold)", marginLeft: 4 }}>+1 через {formatTimer(regenTimer)}</span>
+        )}
+        {battles === 0 && (
+          <span style={{ fontSize: 11, color: "#cc4444", marginLeft: 2 }}>Боёв нет!</span>
+        )}
+      </div>
+
       {/* SEARCH */}
       {phase === "search" && (
         <div className="game-panel-inner" style={{ borderRadius: 4, padding: "20px 16px", textAlign: "center" }}>
@@ -240,9 +277,15 @@ export default function DuelSection({ hero: heroBase }: { hero: HeroProps }) {
             Вступи в честный бой с другим героем.<br />
             Победитель получает опыт и золото!
           </p>
-          <button onClick={findEnemy} style={{ padding: "10px 28px", borderRadius: 4, fontWeight: 700, fontSize: 14, background: "var(--crimson)", color: "var(--parchment)", border: "none", cursor: "pointer", fontFamily: "'Golos Text', sans-serif" }}>
-            🔍 Найти противника
-          </button>
+          {battles <= 0 ? (
+            <div style={{ padding: "10px", borderRadius: 4, background: "#fff5f0", border: "1px solid #fca5a5", fontSize: 13, color: "#9b1c1c" }}>
+              ⏳ Боёв не осталось. Восстановление через {regenTimer !== null ? formatTimer(regenTimer) : "—"}
+            </div>
+          ) : (
+            <button onClick={findEnemy} style={{ padding: "10px 28px", borderRadius: 4, fontWeight: 700, fontSize: 14, background: "var(--crimson)", color: "var(--parchment)", border: "none", cursor: "pointer", fontFamily: "'Golos Text', sans-serif" }}>
+              🔍 Найти противника
+            </button>
+          )}
         </div>
       )}
 
