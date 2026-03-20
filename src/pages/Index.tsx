@@ -1,19 +1,22 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Icon from "@/components/ui/icon";
-import DuelSection from "@/components/DuelSection";
+import DuelSection, { type DuelReward } from "@/components/DuelSection";
 
 const BANNER_URL =
   "https://cdn.poehali.dev/projects/e03d01dd-c207-488c-aa14-9e40184b6c24/files/840de9ee-8516-4aab-88ca-92499cb030ec.jpg";
 
+const AVATAR_URL =
+  "https://cdn.poehali.dev/projects/e03d01dd-c207-488c-aa14-9e40184b6c24/bucket/884f7408-826e-40ed-b0c4-6d765a19bc86.jpg";
+
 const MAX_BATTLES = 6;
-const REGEN_MS = 5 * 60 * 1000; // 5 минут
+const REGEN_MS = 5 * 60 * 1000;
 
 export interface DiaryEntry {
   id: number;
   date: string;
   icon: string;
   text: string;
-  type: "duel_win" | "duel_lose" | "system";
+  type: "duel_win" | "duel_lose" | "campaign" | "system";
 }
 
 export interface HeroStats {
@@ -26,16 +29,14 @@ export interface HeroStats {
 
 const INITIAL_STATS: HeroStats = { strength: 5, defense: 5, agility: 5, mastery: 5, vitality: 5 };
 
-const STAT_COST = (level: number) => level * 50; // серебро за улучшение
+const STAT_COST = (level: number) => level * 50;
 
 const HERO_BASE = {
   name: "Странник",
   level: 1,
-  hp: 80,
+  hp: 100,
   maxHp: 100,
-  mana: 45,
-  maxMana: 60,
-  xp: 120,
+  xp: 0,
   xpNext: 300,
   gold: 250,
   silver: 480,
@@ -48,24 +49,26 @@ const HERO_BASE = {
 };
 
 const SECTIONS = [
-  { id: "diary", label: "Дневник", icon: "📖", desc: "Записи о приключениях" },
-  { id: "quests", label: "Задания", icon: "📜", desc: "Доступные квесты" },
-  { id: "duel", label: "Дуэль", icon: "⚔️", desc: "Сразись с героем" },
-  { id: "village", label: "Поселок", icon: "🏘️", desc: "Твоя деревня" },
-  { id: "campaign", label: "Поход", icon: "🗺️", desc: "Исследуй мир" },
-  { id: "dungeon", label: "Подземелье", icon: "🕳️", desc: "Тёмные глубины" },
-  { id: "dragon", label: "Дракон", icon: "🐉", desc: "Логово дракона" },
-  { id: "orcs", label: "Орки", icon: "👹", desc: "Земли орков" },
-  { id: "order", label: "Орден", icon: "🛡️", desc: "Рыцарский орден" },
-  { id: "guild", label: "Дружина", icon: "🤝", desc: "Союз героев" },
-  { id: "menagerie", label: "Зверинец", icon: "🦁", desc: "Твои существа" },
-  { id: "top", label: "Лучшие", icon: "🏆", desc: "Рейтинг героев" },
+  { id: "diary", label: "Дневник", icon: "📖" },
+  { id: "quests", label: "Задания", icon: "📜" },
+  { id: "duel", label: "Дуэль", icon: "⚔️" },
+  { id: "village", label: "Поселок", icon: "🏘️" },
+  { id: "campaign", label: "Поход", icon: "🗺️" },
+  { id: "dungeon", label: "Подземелье", icon: "🕳️" },
+  { id: "dragon", label: "Дракон", icon: "🐉" },
+  { id: "orcs", label: "Орки", icon: "👹" },
+  { id: "order", label: "Орден", icon: "🛡️" },
+  { id: "guild", label: "Дружина", icon: "🤝" },
+  { id: "menagerie", label: "Зверинец", icon: "🦁" },
+  { id: "top", label: "Лучшие", icon: "🏆" },
 ];
 
-const QUESTS = [
-  { id: 1, title: "Волчьи шкуры", desc: "Принеси 5 шкур серых волков кузнецу", reward: "100 XP + 50 золота", status: "active", progress: 2, total: 5 },
-  { id: 2, title: "Древний артефакт", desc: "Найди артефакт в Подземелье третьего уровня", reward: "300 XP + Магический меч", status: "available", progress: 0, total: 1 },
-  { id: 3, title: "Орочий вожак", desc: "Победи вождя орков на восточных землях", reward: "500 XP + 200 золота", status: "available", progress: 0, total: 1 },
+const STAT_INFO = [
+  { key: "strength" as const, label: "Сила", icon: "💪", desc: "Увеличивает урон атаки" },
+  { key: "defense" as const, label: "Защита", icon: "🛡️", desc: "Снижает получаемый урон" },
+  { key: "agility" as const, label: "Ловкость", icon: "🏃", desc: "Повышает шанс уклонения и скорость" },
+  { key: "mastery" as const, label: "Мастерство", icon: "⚔️", desc: "Увеличивает крит и точность" },
+  { key: "vitality" as const, label: "Живучесть", icon: "❤️", desc: "Увеличивает максимальное HP и восстановление" },
 ];
 
 const TOP_HEROES = [
@@ -76,17 +79,44 @@ const TOP_HEROES = [
   { rank: 5, name: "Скиталец", level: 38, guild: "Серые Волки", power: 12900 },
 ];
 
-const STAT_INFO = [
-  { key: "strength" as const, label: "Сила", icon: "💪", desc: "Увеличивает урон атаки" },
-  { key: "defense" as const, label: "Защита", icon: "🛡️", desc: "Снижает получаемый урон" },
-  { key: "agility" as const, label: "Ловкость", icon: "🏃", desc: "Повышает шанс уклонения и скорость" },
-  { key: "mastery" as const, label: "Мастерство", icon: "⚔️", desc: "Увеличивает крит и точность" },
-  { key: "vitality" as const, label: "Живучесть", icon: "❤️", desc: "Увеличивает максимальное HP" },
+const CAMPAIGN_OPTIONS = [
+  { minutes: 10, label: "10 минут", silverMin: 5, silverMax: 15 },
+  { minutes: 30, label: "30 минут", silverMin: 15, silverMax: 40 },
+  { minutes: 60, label: "1 час", silverMin: 35, silverMax: 80 },
+  { minutes: 120, label: "2 часа", silverMin: 75, silverMax: 160 },
+  { minutes: 240, label: "4 часа", silverMin: 160, silverMax: 350 },
+  { minutes: 480, label: "8 часов", silverMin: 350, silverMax: 700 },
 ];
 
-type SectionId = typeof SECTIONS[number]["id"] | "main" | "hero";
+interface QuestDef {
+  id: number;
+  title: string;
+  desc: string;
+  reward: string;
+  target: number;
+  type: "duel_wins" | "campaign_count" | "upgrade_stat" | "silver_earn" | "glory_earn";
+}
+
+const QUESTS_DEF: QuestDef[] = [
+  { id: 1, title: "Дуэлянт", desc: "Одержи 3 победы в дуэлях", reward: "50 серебра", target: 3, type: "duel_wins" },
+  { id: 2, title: "Путешественник", desc: "Соверши 2 похода", reward: "30 серебра", target: 2, type: "campaign_count" },
+  { id: 3, title: "Тренировка", desc: "Улучши любой параметр 3 раза", reward: "80 серебра", target: 3, type: "upgrade_stat" },
+  { id: 4, title: "Богач", desc: "Заработай 200 серебра", reward: "1 💎 кристалл", target: 200, type: "silver_earn" },
+  { id: 5, title: "Славный герой", desc: "Набери 5 славы", reward: "100 серебра", target: 5, type: "glory_earn" },
+];
+
+type SectionId = typeof SECTIONS[number]["id"] | "main" | "hero" | "profile";
 
 function formatTimer(ms: number) {
+  const total = Math.ceil(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function formatTimerShort(ms: number) {
   const total = Math.ceil(ms / 1000);
   const m = Math.floor(total / 60);
   const s = total % 60;
@@ -97,40 +127,80 @@ export default function Index() {
   const [activeSection, setActiveSection] = useState<SectionId>("main");
   const [hero] = useState(HERO_BASE);
   const [silver, setSilver] = useState(480);
+  const [glory, setGlory] = useState(0);
+  const [xp, setXp] = useState(0);
   const [stats, setStats] = useState<HeroStats>(INITIAL_STATS);
   const [duelDifficulty, setDuelDifficulty] = useState<"higher" | "equal" | "lower">("equal");
 
-  // HP regen
-  const maxHp = hero.maxHp + stats.vitality * 15;
-  const [currentHp, setCurrentHp] = useState(hero.hp);
+  const healthParam = 5;
+  const maxHp = 100 + stats.vitality * 15;
+  const [currentHp, setCurrentHp] = useState(100);
+  const regenPerHour = Math.round(maxHp * (0.05 + stats.vitality * 0.01));
 
-  // HP regeneration based on vitality
+  const [profileView, setProfileView] = useState<{ name: string; level: number } | null>(null);
+
   useEffect(() => {
     const regenInterval = Math.max(5, 30 - stats.vitality * 2) * 1000;
     const timer = setInterval(() => {
       setCurrentHp((prev) => {
-        const max = hero.maxHp + stats.vitality * 15;
+        const max = 100 + stats.vitality * 15;
         return prev < max ? Math.min(max, prev + 1) : prev;
       });
     }, regenInterval);
     return () => clearInterval(timer);
-  }, [stats.vitality, hero.maxHp]);
+  }, [stats.vitality]);
 
-  // Бои
   const [battles, setBattles] = useState(MAX_BATTLES);
-  // Очередь восстановления: timestamp когда добавили слот
   const regenQueue = useRef<number[]>([]);
-  const [regenTimer, setRegenTimer] = useState<number | null>(null); // мс до следующего восстановления
+  const [regenTimer, setRegenTimer] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Дневник
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const diaryIdRef = useRef(10);
 
-  const xpPercent = Math.round((hero.xp / hero.xpNext) * 100);
-  const hpPercent = Math.round((currentHp / maxHp) * 100);
+  const [campaignEnd, setCampaignEnd] = useState<number | null>(null);
+  const [campaignTimer, setCampaignTimer] = useState<number | null>(null);
+  const [campaignReward, setCampaignReward] = useState(0);
+  const [campaignNotice, setCampaignNotice] = useState<string | null>(null);
 
-  // Тик таймера регена
+  const [questProgress, setQuestProgress] = useState<Record<number, number>>({
+    1: 0, 2: 0, 3: 0, 4: 0, 5: 0,
+  });
+  const [questClaimed, setQuestClaimed] = useState<Record<number, boolean>>({});
+  const [totalSilverEarned, setTotalSilverEarned] = useState(0);
+
+  useEffect(() => {
+    if (campaignEnd === null) return;
+    const tick = () => {
+      const left = campaignEnd - Date.now();
+      if (left <= 0) {
+        setCampaignTimer(null);
+        const reward = campaignReward;
+        setSilver((s) => s + reward);
+        setTotalSilverEarned((t) => t + reward);
+        const now = new Date();
+        const dateStr = `${now.getDate()} марта, ${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`;
+        const entry: DiaryEntry = {
+          id: ++diaryIdRef.current,
+          date: dateStr,
+          icon: "🗺️",
+          text: `Поход завершён! Получено ${reward} серебра.`,
+          type: "campaign",
+        };
+        setDiary((prev) => [entry, ...prev]);
+        setCampaignNotice(`Поход завершён! +${reward} серебра`);
+        setCampaignEnd(null);
+        setCampaignReward(0);
+        setQuestProgress((prev) => ({ ...prev, 2: (prev[2] || 0) + 1 }));
+        return;
+      }
+      setCampaignTimer(left);
+    };
+    const interval = setInterval(tick, 1000);
+    tick();
+    return () => clearInterval(interval);
+  }, [campaignEnd, campaignReward]);
+
   useEffect(() => {
     if (battles >= MAX_BATTLES) {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -176,28 +246,23 @@ export default function Index() {
     setDiary((prev) => [{ ...entry, id: diaryIdRef.current }, ...prev]);
   }, []);
 
-  const onDuelEnd = useCallback((result: "victory" | "defeat", enemyName: string, xp: number, gold: number, silverReward: number) => {
-    setSilver(s => s + silverReward);
+  const onDuelEnd = useCallback((result: "victory" | "defeat", enemyName: string, reward: DuelReward) => {
+    setSilver((s) => s + reward.silver);
+    setGlory((g) => g + reward.glory);
+    setXp((x) => x + reward.xp);
+    if (reward.silver > 0) setTotalSilverEarned((t) => t + reward.silver);
+
     const now = new Date();
     const dateStr = `${now.getDate()} марта, ${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`;
     if (result === "victory") {
       const parts: string[] = [];
-      if (xp > 0) parts.push(`+${xp} XP`);
-      if (gold > 0) parts.push(`+${gold} 🪙 золота`);
-      if (silverReward > 0) parts.push(`+${silverReward} серебра`);
-      addDiaryEntry({
-        date: dateStr,
-        icon: "🏆",
-        text: `Победа над ${enemyName} в дуэли! Получено ${parts.join(", ")}.`,
-        type: "duel_win",
-      });
+      if (reward.glory > 0) parts.push(`+${reward.glory} ⭐ славы`);
+      if (reward.xp > 0) parts.push(`+${reward.xp} опыта`);
+      if (reward.silver > 0) parts.push(`+${reward.silver} серебра`);
+      addDiaryEntry({ date: dateStr, icon: "🏆", text: `Победа над ${enemyName}! ${parts.join(", ")}.`, type: "duel_win" });
+      setQuestProgress((prev) => ({ ...prev, 1: (prev[1] || 0) + 1 }));
     } else {
-      addDiaryEntry({
-        date: dateStr,
-        icon: "💀",
-        text: `Поражение от ${enemyName} в дуэли. Потеряно ${Math.abs(xp)} XP и ${Math.abs(gold)} 🪙 золота.`,
-        type: "duel_lose",
-      });
+      addDiaryEntry({ date: dateStr, icon: "💀", text: `Поражение от ${enemyName} в дуэли.`, type: "duel_lose" });
     }
   }, [addDiaryEntry]);
 
@@ -207,6 +272,34 @@ export default function Index() {
     if (silver < cost) return;
     setSilver((s) => s - cost);
     setStats((prev) => ({ ...prev, [key]: prev[key] + 1 }));
+    setQuestProgress((prev) => ({ ...prev, 3: (prev[3] || 0) + 1 }));
+  };
+
+  const startCampaign = (option: typeof CAMPAIGN_OPTIONS[number]) => {
+    if (campaignEnd !== null) return;
+    const reward = Math.floor(Math.random() * (option.silverMax - option.silverMin + 1)) + option.silverMin;
+    setCampaignReward(reward);
+    setCampaignEnd(Date.now() + option.minutes * 60 * 1000);
+    setCampaignNotice(null);
+  };
+
+  const claimQuest = (quest: QuestDef) => {
+    if (questClaimed[quest.id]) return;
+    const progress = getQuestProgress(quest);
+    if (progress < quest.target) return;
+    setQuestClaimed((prev) => ({ ...prev, [quest.id]: true }));
+    if (quest.id === 4) {
+      // gems reward
+    } else {
+      const match = quest.reward.match(/(\d+)/);
+      if (match) setSilver((s) => s + parseInt(match[1]));
+    }
+  };
+
+  const getQuestProgress = (quest: QuestDef): number => {
+    if (quest.type === "silver_earn") return totalSilverEarned;
+    if (quest.type === "glory_earn") return glory;
+    return questProgress[quest.id] || 0;
   };
 
   const heroForDuel = {
@@ -219,24 +312,34 @@ export default function Index() {
     hp: currentHp,
   };
 
-  const renderContent = () => {
+  const openSection = (id: SectionId) => {
+    setCampaignNotice(null);
+    setActiveSection(id);
+  };
+
+  const viewProfile = (name: string, level: number) => {
+    setProfileView({ name, level });
+    setActiveSection("profile");
+  };
+
+  const renderSectionPage = () => {
     switch (activeSection) {
       case "diary": {
-        const filteredDiary = diary.filter((e) => e.type === "duel_win" || e.type === "duel_lose");
+        const filteredDiary = diary.filter((e) => e.type === "duel_win" || e.type === "duel_lose" || e.type === "campaign");
         return (
           <div className="animate-fade-in">
             <h2 style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--crimson)", fontSize: 22, fontWeight: 700, marginBottom: 12 }}>
               📖 Дневник приключений
             </h2>
-            <div className="content-stagger" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {filteredDiary.length === 0 && (
                 <div style={{ textAlign: "center", padding: "20px 0", fontSize: 13, color: "var(--text-medium)" }}>
-                  Записей пока нет. Сражайся в дуэлях!
+                  Записей пока нет. Сражайся в дуэлях и ходи в походы!
                 </div>
               )}
               {filteredDiary.map((e) => {
-                const bg = e.type === "duel_win" ? "#f0fdf4" : "#fff5f5";
-                const border = e.type === "duel_win" ? "#86efac" : "#fca5a5";
+                const bg = e.type === "duel_win" ? "#f0fdf4" : e.type === "campaign" ? "#eff6ff" : "#fff5f5";
+                const border = e.type === "duel_win" ? "#86efac" : e.type === "campaign" ? "#93c5fd" : "#fca5a5";
                 return (
                   <div key={e.id} className="game-panel-inner" style={{ borderRadius: 4, padding: "9px 13px", background: bg, border: `1px solid ${border}` }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
@@ -258,25 +361,35 @@ export default function Index() {
             <h2 style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--crimson)", fontSize: 22, fontWeight: 700, marginBottom: 12 }}>
               📜 Задания
             </h2>
-            <div className="content-stagger" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {QUESTS.map((q) => (
-                <div key={q.id} className="game-panel-inner" style={{ borderRadius: 4, padding: "10px 14px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontWeight: 600, fontSize: 14, color: "var(--text-dark)" }}>{q.title}</span>
-                    <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 3, background: q.status === "active" ? "#fef9c3" : "#f0fdf4", color: q.status === "active" ? "#854d0e" : "#166534", border: `1px solid ${q.status === "active" ? "#fde047" : "#86efac"}` }}>
-                      {q.status === "active" ? "Выполняется" : "Доступно"}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: 12, color: "var(--text-medium)", marginBottom: 8 }}>{q.desc}</p>
-                  {q.status === "active" && (
-                    <div style={{ marginBottom: 6 }}>
-                      <div className="xp-bar"><div className="xp-fill" style={{ width: `${(q.progress / q.total) * 100}%` }} /></div>
-                      <div style={{ fontSize: 11, marginTop: 2, color: "var(--text-medium)" }}>{q.progress}/{q.total}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {QUESTS_DEF.map((q) => {
+                const progress = getQuestProgress(q);
+                const done = progress >= q.target;
+                const claimed = questClaimed[q.id];
+                return (
+                  <div key={q.id} className="game-panel-inner" style={{ borderRadius: 4, padding: "10px 14px", opacity: claimed ? 0.5 : 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontWeight: 600, fontSize: 14, color: "var(--text-dark)" }}>{q.title}</span>
+                      <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 3, background: claimed ? "#e5e7eb" : done ? "#f0fdf4" : "#fef9c3", color: claimed ? "#9ca3af" : done ? "#166534" : "#854d0e", border: `1px solid ${claimed ? "#d1d5db" : done ? "#86efac" : "#fde047"}` }}>
+                        {claimed ? "Получено" : done ? "Готово!" : "В процессе"}
+                      </span>
                     </div>
-                  )}
-                  <div style={{ fontSize: 12, color: "var(--gold)" }}>🎁 {q.reward}</div>
-                </div>
-              ))}
+                    <p style={{ fontSize: 12, color: "var(--text-medium)", marginBottom: 8 }}>{q.desc}</p>
+                    <div style={{ marginBottom: 6 }}>
+                      <div className="xp-bar"><div className="xp-fill" style={{ width: `${Math.min(100, (progress / q.target) * 100)}%` }} /></div>
+                      <div style={{ fontSize: 11, marginTop: 2, color: "var(--text-medium)" }}>{Math.min(progress, q.target)}/{q.target}</div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ fontSize: 12, color: "var(--gold)" }}>🎁 {q.reward}</div>
+                      {done && !claimed && (
+                        <button onClick={() => claimQuest(q)} style={{ padding: "4px 12px", borderRadius: 3, fontWeight: 600, fontSize: 11, background: "var(--crimson)", color: "var(--parchment)", border: "none", cursor: "pointer" }}>
+                          Забрать
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
@@ -293,65 +406,172 @@ export default function Index() {
             difficulty={duelDifficulty}
             onDifficultyChange={setDuelDifficulty}
             playerLevel={hero.level}
+            onViewProfile={viewProfile}
           />
         );
 
       case "hero":
         return (
           <div className="animate-fade-in">
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--crimson)", fontSize: 22, fontWeight: 700, marginBottom: 4 }}>
-              🧙 Герой
+            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--crimson)", fontSize: 22, fontWeight: 700, marginBottom: 12, textAlign: "center" }}>
+              Твой Герой
             </h2>
-            <div style={{ fontSize: 12, color: "var(--text-medium)", marginBottom: 14 }}>Серебро: <strong style={{ color: "var(--text-dark)" }}>🪙 {silver}</strong></div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {STAT_INFO.map((s) => {
-                const level = stats[s.key];
-                const cost = STAT_COST(level);
-                const canAfford = silver >= cost;
-                return (
-                  <div key={s.key} className="game-panel-inner" style={{ borderRadius: 4, padding: "10px 13px", display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ fontSize: 24, flexShrink: 0 }}>{s.icon}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                        <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-dark)" }}>{s.label}</span>
-                        <span style={{ fontWeight: 700, fontSize: 14, color: "var(--crimson)" }}>Ур. {level}</span>
-                      </div>
-                      <div style={{ fontSize: 11, color: "var(--text-medium)", marginBottom: 6 }}>{s.desc}</div>
-                      {/* Level dots */}
-                      <div style={{ display: "flex", gap: 3 }}>
-                        {Array.from({ length: Math.min(level, 10) }).map((_, i) => (
-                          <div key={i} style={{ width: 10, height: 10, borderRadius: 2, background: "var(--crimson)", border: "1px solid #7a1515" }} />
-                        ))}
-                        {level < 10 && Array.from({ length: 10 - level }).map((_, i) => (
-                          <div key={i} style={{ width: 10, height: 10, borderRadius: 2, background: "#e8dcc0", border: "1px solid #c8a96e" }} />
-                        ))}
+            <div style={{ textAlign: "center", marginBottom: 16 }}>
+              <img src={AVATAR_URL} alt="Аватар" style={{ width: 100, height: 100, borderRadius: 8, border: "3px solid var(--parchment-border)", objectFit: "cover" }} />
+              <div style={{ fontWeight: 700, fontSize: 16, marginTop: 8, color: "var(--text-dark)" }}>{hero.name}</div>
+              <div style={{ fontSize: 12, color: "var(--gold)" }}>Уровень {hero.level}</div>
+            </div>
+
+            <div className="game-panel-inner" style={{ borderRadius: 4, padding: "12px 14px", marginBottom: 12 }}>
+              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, textAlign: "center", marginBottom: 10, color: "var(--text-dark)", borderBottom: "1px solid var(--parchment-border)", paddingBottom: 8 }}>
+                Параметры
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text-medium)", marginBottom: 10 }}>Серебро: <strong style={{ color: "var(--text-dark)" }}>🪙 {silver}</strong></div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {STAT_INFO.map((s) => {
+                  const base = INITIAL_STATS[s.key];
+                  const bonus = stats[s.key] - base;
+                  const level = stats[s.key];
+                  const cost = STAT_COST(level);
+                  const canAfford = silver >= cost;
+                  return (
+                    <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                      <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>{s.icon}</span>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-dark)", minWidth: 100 }}>{s.label}:</span>
+                      <span style={{ fontSize: 14, color: "var(--text-dark)" }}>{base}</span>
+                      {bonus > 0 && <span style={{ fontSize: 14, color: "#15803d" }}>+{bonus}</span>}
+                      <div style={{ marginLeft: "auto" }}>
+                        <button
+                          onClick={() => upgradeStat(s.key)}
+                          disabled={!canAfford || level >= 50}
+                          style={{
+                            padding: "3px 8px", borderRadius: 3, fontWeight: 600, fontSize: 11,
+                            border: "none", cursor: canAfford && level < 50 ? "pointer" : "not-allowed",
+                            background: level >= 50 ? "#ccc" : canAfford ? "var(--crimson)" : "#e8dcc0",
+                            color: level >= 50 ? "#888" : canAfford ? "var(--parchment)" : "#a08040",
+                          }}
+                        >
+                          {level >= 50 ? "Макс" : `+1 (${cost}🪙)`}
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => upgradeStat(s.key)}
-                      disabled={!canAfford || level >= 10}
-                      style={{
-                        flexShrink: 0,
-                        padding: "6px 10px",
-                        borderRadius: 4,
-                        fontWeight: 700,
-                        fontSize: 11,
-                        border: "none",
-                        cursor: canAfford && level < 10 ? "pointer" : "not-allowed",
-                        background: level >= 10 ? "#ccc" : canAfford ? "var(--crimson)" : "#e8dcc0",
-                        color: level >= 10 ? "#888" : canAfford ? "var(--parchment)" : "#a08040",
-                        lineHeight: 1.4,
-                        textAlign: "center",
-                        minWidth: 56,
-                      }}
-                    >
-                      {level >= 10 ? "Макс." : <>+1<br /><span style={{ fontSize: 10, fontWeight: 400 }}>🪙{cost}</span></>}
-                    </button>
+                  );
+                })}
+                <div style={{ borderTop: "1px solid var(--parchment-border)", paddingTop: 6, marginTop: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                    <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>❤️</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-dark)", minWidth: 100 }}>Здоровье:</span>
+                    <span style={{ fontSize: 14, color: "var(--text-dark)" }}>{currentHp}</span>
                   </div>
-                );
-              })}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                    <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>❤️</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-dark)", minWidth: 100 }}>Здор. Макс.:</span>
+                    <span style={{ fontSize: 14, color: "var(--text-dark)" }}>{maxHp}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                    <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>❤️</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-dark)", minWidth: 100 }}>Восст.:</span>
+                    <span style={{ fontSize: 14, color: "var(--text-dark)" }}>{regenPerHour} в час</span>
+                  </div>
+                </div>
+                <div style={{ borderTop: "1px solid var(--parchment-border)", paddingTop: 6, marginTop: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                    <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>⭐</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-dark)", minWidth: 100 }}>Слава:</span>
+                    <span style={{ fontSize: 14, color: "var(--gold)" }}>{glory}</span>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+        );
+
+      case "profile": {
+        if (!profileView) return null;
+        const fakeStats = {
+          strength: 3 + profileView.level * 2 + Math.floor(Math.random() * 5),
+          defense: 3 + profileView.level * 2 + Math.floor(Math.random() * 5),
+          agility: 3 + profileView.level + Math.floor(Math.random() * 4),
+          mastery: 3 + profileView.level + Math.floor(Math.random() * 4),
+          vitality: 3 + profileView.level + Math.floor(Math.random() * 3),
+        };
+        const fakeMaxHp = 100 + fakeStats.vitality * 15;
+        return (
+          <div className="animate-fade-in">
+            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--crimson)", fontSize: 22, fontWeight: 700, marginBottom: 12, textAlign: "center" }}>
+              Профиль героя
+            </h2>
+            <div style={{ textAlign: "center", marginBottom: 16 }}>
+              <div style={{ fontSize: 48, marginBottom: 8 }}>👤</div>
+              <div style={{ fontWeight: 700, fontSize: 16, color: "var(--text-dark)" }}>{profileView.name}</div>
+              <div style={{ fontSize: 12, color: "var(--gold)" }}>Уровень {profileView.level}</div>
+            </div>
+            <div className="game-panel-inner" style={{ borderRadius: 4, padding: "12px 14px" }}>
+              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, fontWeight: 700, textAlign: "center", marginBottom: 10, color: "var(--text-dark)" }}>Параметры</div>
+              {[
+                { icon: "💪", label: "Сила", val: fakeStats.strength },
+                { icon: "🛡️", label: "Защита", val: fakeStats.defense },
+                { icon: "🏃", label: "Ловкость", val: fakeStats.agility },
+                { icon: "⚔️", label: "Мастерство", val: fakeStats.mastery },
+                { icon: "❤️", label: "Живучесть", val: fakeStats.vitality },
+                { icon: "❤️", label: "Здор. Макс.", val: fakeMaxHp },
+              ].map((s) => (
+                <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: "center" }}>{s.icon}</span>
+                  <span style={{ fontWeight: 600, fontSize: 13, color: "var(--text-dark)", minWidth: 100 }}>{s.label}:</span>
+                  <span style={{ fontSize: 13, color: "var(--text-dark)" }}>{s.val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      case "campaign":
+        return (
+          <div className="animate-fade-in">
+            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--crimson)", fontSize: 22, fontWeight: 700, marginBottom: 12 }}>
+              🗺️ Поход
+            </h2>
+
+            {campaignEnd !== null ? (
+              <div className="game-panel-inner" style={{ borderRadius: 4, padding: "20px 16px", textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 8 }}>🏕️</div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: "var(--text-dark)", marginBottom: 8 }}>Герой в походе</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: "var(--crimson)", fontFamily: "monospace", marginBottom: 8 }}>
+                  {campaignTimer !== null ? formatTimer(campaignTimer) : "..."}
+                </div>
+                <p style={{ fontSize: 13, color: "var(--text-medium)", lineHeight: 1.6 }}>
+                  Герой исследует дикие земли.<br />
+                  Вернуться в поселок нельзя, пока поход не завершён.
+                </p>
+              </div>
+            ) : (
+              <>
+                <p style={{ fontSize: 13, color: "var(--text-medium)", marginBottom: 14, lineHeight: 1.6 }}>
+                  Отправь героя в поход. Чем дольше путешествие — тем больше серебра он принесёт.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {CAMPAIGN_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.minutes}
+                      onClick={() => startCampaign(opt)}
+                      className="game-panel-inner"
+                      style={{ borderRadius: 4, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", border: "1px solid var(--parchment-border)", background: "#faf6e8", textAlign: "left" }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-dark)" }}>🗺️ {opt.label}</div>
+                        <div style={{ fontSize: 11, color: "var(--text-medium)", marginTop: 2 }}>Награда: {opt.silverMin}–{opt.silverMax} серебра</div>
+                      </div>
+                      <div style={{ padding: "6px 14px", borderRadius: 4, background: "var(--crimson)", color: "var(--parchment)", fontWeight: 700, fontSize: 12 }}>
+                        Идти
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         );
 
@@ -378,7 +598,12 @@ export default function Index() {
                         {h.rank === 1 ? "🥇" : h.rank === 2 ? "🥈" : h.rank === 3 ? "🥉" : h.rank}
                       </td>
                       <td style={{ padding: "8px 12px" }}>
-                        <div style={{ fontWeight: 600, color: "var(--text-dark)" }}>{h.name}</div>
+                        <div
+                          style={{ fontWeight: 600, color: "var(--text-dark)", cursor: "pointer", textDecoration: "underline dotted" }}
+                          onClick={() => viewProfile(h.name, h.level)}
+                        >
+                          {h.name}
+                        </div>
                         <div style={{ fontSize: 11, color: "var(--text-medium)" }}>{h.guild}</div>
                       </td>
                       <td style={{ padding: "8px 12px", textAlign: "center", fontWeight: 600, color: "var(--crimson)" }}>{h.level}</td>
@@ -397,7 +622,7 @@ export default function Index() {
             <h2 style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--crimson)", fontSize: 22, fontWeight: 700, marginBottom: 12 }}>
               🏘️ Поселок
             </h2>
-            <div className="content-stagger" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {[
                 { name: "Кузница", icon: "🔨", desc: "Улучши оружие и броню", level: 2 },
                 { name: "Таверна", icon: "🍺", desc: "Отдохни и найди задания", level: 1 },
@@ -425,128 +650,134 @@ export default function Index() {
             <h2 style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--crimson)", fontSize: 24, fontWeight: 700, marginBottom: 8 }}>
               {section?.label}
             </h2>
-            <p style={{ fontSize: 13, color: "var(--text-medium)" }}>{section?.desc} — раздел в разработке</p>
+            <p style={{ fontSize: 13, color: "var(--text-medium)" }}>Раздел в разработке</p>
           </div>
         );
       }
     }
   };
 
+  const isOnSection = activeSection !== "main";
+  const isCampaignActive = campaignEnd !== null;
+  const canNavigate = !isCampaignActive || activeSection === "campaign";
+
   return (
     <div style={{ minHeight: "100vh", background: "var(--parchment)" }}>
-      {/* Header */}
       <header className="game-header">
         <div style={{ textAlign: "center", padding: "8px 0", borderBottom: "1px solid rgba(200,150,60,0.4)" }}>
+          {campaignNotice && (
+            <div style={{ fontSize: 12, color: "#15803d", fontWeight: 600, marginBottom: 4, background: "#f0fdf4", padding: "4px 8px", borderRadius: 3 }}>
+              {campaignNotice}
+            </div>
+          )}
           <h1 className="game-title" style={{ fontSize: 22, letterSpacing: "0.3em" }}>⚜ Г Е Р О И ⚜</h1>
         </div>
 
-        {/* Stats bar */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "8px 12px" }}>
-          <div className="stat-badge" onClick={() => setActiveSection("hero")} style={{ cursor: "pointer" }}><span>👤</span><span style={{ fontWeight: 600 }}>{hero.name}</span></div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "8px 12px", justifyContent: "center" }}>
+          <div className="stat-badge" onClick={() => openSection("hero")} style={{ cursor: "pointer" }}><span>👤</span><span style={{ fontWeight: 600 }}>{hero.name}</span></div>
           <div className="stat-badge"><span>⭐</span><span>{hero.level} ур.</span></div>
-          <div className="stat-badge"><span>❤️</span><span>{currentHp}/{maxHp}</span></div>
-          <div className="stat-badge"><span>🥈</span><span>{silver}</span></div>
-          <div className="stat-badge"><span>🪙</span><span>{hero.gold}</span></div>
+          <div className="stat-badge"><span>❤️</span><span>{currentHp}</span></div>
+          <div className="stat-badge"><span style={{ fontSize: 12 }}>🥈</span><span>{silver}</span></div>
+          <div className="stat-badge"><span style={{ fontSize: 12 }}>🥇</span><span>{hero.gold}</span></div>
           <div className="stat-badge"><span>💎</span><span>{hero.gems}</span></div>
-          {/* Счётчик боёв */}
           <div className="stat-badge" style={{ gap: 5, alignItems: "center" }}>
-            <span title="Количество боёв">⚔️</span>
+            <span>⚔️</span>
             <span style={{ fontWeight: 600 }}>{battles}/{MAX_BATTLES}</span>
             {regenTimer !== null && battles < MAX_BATTLES && (
-              <span style={{ fontSize: 10, color: "#f0d080", marginLeft: 2 }}>+{formatTimer(regenTimer)}</span>
+              <span style={{ fontSize: 10, color: "#f0d080", marginLeft: 2 }}>+{formatTimerShort(regenTimer)}</span>
             )}
           </div>
-        </div>
-
-        {/* Progress bars */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "0 12px 10px" }}>
-          <div>
-            <div style={{ fontSize: 10, color: "#f0d080", marginBottom: 3 }}>⚡ XP {hero.xp}/{hero.xpNext}</div>
-            <div className="xp-bar"><div className="xp-fill" style={{ width: `${xpPercent}%` }} /></div>
-          </div>
-          <div>
-            <div style={{ fontSize: 10, color: "#f0d080", marginBottom: 3 }}>❤️ HP {hpPercent}%</div>
-            <div className="xp-bar"><div className="hp-fill" style={{ width: `${hpPercent}%` }} /></div>
-          </div>
+          {isCampaignActive && (
+            <div className="stat-badge" style={{ gap: 5 }}>
+              <span>🗺️</span>
+              <span style={{ fontWeight: 600 }}>{campaignTimer !== null ? formatTimer(campaignTimer) : "..."}</span>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Content wrapper */}
       <div style={{ maxWidth: 520, margin: "0 auto" }}>
-        {/* Banner */}
-        <div style={{ height: 140, background: "#1a0a0a", overflow: "hidden", position: "relative" }}>
-          <img src={BANNER_URL} alt="Герои" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.9 }} />
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 40%, rgba(245,240,224,0.85) 100%)" }} />
-        </div>
-
-        <div className="game-panel">
-          {/* Welcome */}
-          {activeSection === "main" && (
-            <div className="animate-fade-in" style={{ padding: "14px 16px", borderBottom: "1px solid var(--parchment-border)", background: "linear-gradient(180deg, #fffef5 0%, #faf4dc 100%)" }}>
-              <h2 style={{ textAlign: "center", fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, marginBottom: 6, color: "var(--text-dark)" }}>
-                Добро пожаловать!
-              </h2>
-              <p style={{ textAlign: "center", fontSize: 13, color: "var(--text-medium)", lineHeight: 1.6 }}>
-                Герой <strong>{hero.name}</strong>, уровень <strong>{hero.level}</strong>.<br />
-                До следующего уровня: <strong>{hero.xpNext - hero.xp} XP</strong>
-              </p>
+        {activeSection === "main" && (
+          <>
+            <div style={{ height: 140, background: "#1a0a0a", overflow: "hidden", position: "relative" }}>
+              <img src={BANNER_URL} alt="Герои" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.9 }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 40%, rgba(245,240,224,0.85) 100%)" }} />
             </div>
-          )}
 
-          {/* Nav */}
-          <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--parchment-border)", background: "#faf6e8" }}>
-            <div className="content-stagger">
-              {SECTIONS.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => setActiveSection(s.id as SectionId)}
-                  className="nav-link"
-                  style={{ width: "100%", textAlign: "left", padding: "5px 8px", borderRadius: 3, background: activeSection === s.id ? "rgba(139,26,26,0.08)" : "transparent", border: "none", cursor: "pointer" }}
-                >
-                  <span style={{ fontSize: 16 }}>{s.icon}</span>
-                  <span>{s.label}</span>
-                  {s.id === "duel" && (
-                    <span style={{ marginLeft: "auto", fontSize: 11, color: battles > 0 ? "var(--gold)" : "#aaa" }}>
-                      {battles}/{MAX_BATTLES} боёв
-                    </span>
-                  )}
-                </button>
-              ))}
+            <div className="game-panel">
+              <div className="animate-fade-in" style={{ padding: "14px 16px", borderBottom: "1px solid var(--parchment-border)", background: "linear-gradient(180deg, #fffef5 0%, #faf4dc 100%)" }}>
+                <h2 style={{ textAlign: "center", fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, marginBottom: 6, color: "var(--text-dark)" }}>
+                  Добро пожаловать!
+                </h2>
+                <p style={{ textAlign: "center", fontSize: 13, color: "var(--text-medium)", lineHeight: 1.6 }}>
+                  Герой <strong>{hero.name}</strong>, уровень <strong>{hero.level}</strong>.
+                </p>
+              </div>
+
+              <div style={{ padding: "12px 16px", background: "#faf6e8" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+                  {SECTIONS.map((s) => {
+                    const blocked = isCampaignActive && s.id !== "campaign" && s.id !== "diary";
+                    return (
+                      <button
+                        key={s.id}
+                        onClick={() => !blocked && openSection(s.id as SectionId)}
+                        style={{
+                          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                          padding: "10px 4px", borderRadius: 6,
+                          background: blocked ? "#e8e0c8" : "#faf6e8",
+                          border: "1px solid var(--parchment-border)", cursor: blocked ? "not-allowed" : "pointer",
+                          opacity: blocked ? 0.5 : 1,
+                          gap: 4,
+                        }}
+                      >
+                        <span style={{ fontSize: 24 }}>{s.icon}</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-dark)" }}>{s.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="bottom-nav" style={{ padding: "8px 16px", display: "flex", flexWrap: "wrap", gap: "4px 16px" }}>
+                <a onClick={() => openSection("main")}>🏠 Главная</a>
+                <a onClick={() => openSection("hero")}>🧙 Герой</a>
+                <a>💬 Чат</a>
+                <a>📬 Почта</a>
+              </div>
             </div>
-          </div>
+          </>
+        )}
 
-          {/* Section content */}
-          {activeSection !== "main" && (
+        {isOnSection && (
+          <div className="game-panel" style={{ marginTop: 0 }}>
             <div style={{ padding: "14px 16px", background: "#faf6e8" }}>
               <button
-                onClick={() => setActiveSection("main")}
+                onClick={() => openSection("main")}
                 style={{ fontSize: 12, color: "var(--crimson)", background: "none", border: "none", cursor: "pointer", marginBottom: 14, display: "flex", alignItems: "center", gap: 4 }}
               >
                 <Icon name="ChevronLeft" size={13} />
                 На главную
               </button>
-              {renderContent()}
+              {renderSectionPage()}
             </div>
-          )}
 
-          {/* Bottom nav */}
-          <div className="bottom-nav" style={{ padding: "8px 16px", display: "flex", flexWrap: "wrap", gap: "4px 16px" }}>
-            <a onClick={() => setActiveSection("main")}>🏠 Главная</a>
-            <a onClick={() => setActiveSection("hero")}>🧙 Герой</a>
-            <a>💬 Чат</a>
-            <a>📬 Почта</a>
-            <a>🪙 {hero.gold} золота</a>
+            <div className="bottom-nav" style={{ padding: "8px 16px", display: "flex", flexWrap: "wrap", gap: "4px 16px" }}>
+              <a onClick={() => openSection("main")}>🏠 Главная</a>
+              <a onClick={() => openSection("hero")}>🧙 Герой</a>
+              <a>💬 Чат</a>
+              <a>📬 Почта</a>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Footer */}
         <footer className="game-footer" style={{ textAlign: "center", padding: "12px 16px" }}>
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "4px 16px", marginBottom: 4 }}>
-            {["Форум", "Помощь", "Правила", "Настройки", "Выйти"].map((link) => (
-              <a key={link} style={{ color: "#f0d080", textDecoration: "underline", cursor: "pointer", fontSize: 12 }}>{link}</a>
-            ))}
+            <a className="footer-link">Правила</a>
+            <a className="footer-link">Помощь</a>
+            <a className="footer-link">Контакты</a>
           </div>
-          <div style={{ color: "#c8a040", fontSize: 11 }}>© 2026 Герои</div>
+          <div style={{ fontSize: 11, color: "var(--text-medium)" }}>⚜ Герои — 2025 ⚜</div>
         </footer>
       </div>
     </div>
