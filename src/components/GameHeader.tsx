@@ -104,7 +104,7 @@ export default function GameHeader({
           <span>{silver}</span>
         </div>
         <div className="stat-badge">
-          <span style={{ fontSize: 12 }}>🥇</span>
+          <span style={{ fontSize: 12 }}></span>
           <span>{hero.gold}</span>
         </div>
         <div className="stat-badge">
