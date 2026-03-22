@@ -7,6 +7,7 @@ import GameFooter from "@/components/GameFooter";
 
 const MAX_BATTLES = 6;
 const REGEN_MS = 5 * 60 * 1000;
+const HERO_SAVE_URL = "https://functions.poehali.dev/a540a07e-c67f-47e9-bb14-59ba436a93d8";
 
 export interface DiaryEntry {
   id: number;
@@ -99,6 +100,15 @@ export type SectionId =
   | "hero"
   | "profile";
 
+function getUserId(): string {
+  let uid = localStorage.getItem("heroes_user_id");
+  if (!uid) {
+    uid = "u_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem("heroes_user_id", uid);
+  }
+  return uid;
+}
+
 export default function Index() {
   const [activeSection, setActiveSection] = useState<SectionId>("main");
   const [hero] = useState(HERO_BASE);
@@ -113,6 +123,9 @@ export default function Index() {
   const regenPerHour = Math.round(maxHp * (0.05 + stats.vitality * 0.01));
 
   const [profileView, setProfileView] = useState<{ name: string; level: number } | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
     const regenInterval = Math.max(5, 30 - stats.vitality * 2) * 1000;
@@ -142,6 +155,100 @@ export default function Index() {
   const [questClaimed, setQuestClaimed] = useState<Record<number, boolean>>({});
   const [totalSilverEarned, setTotalSilverEarned] = useState(0);
 
+  // Load hero from DB on first render
+  useEffect(() => {
+    const uid = getUserId();
+    fetch(HERO_SAVE_URL, { headers: { "X-User-Id": uid } })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.found) return;
+        const h = data.hero;
+        setSilver(h.silver ?? 480);
+        setGlory(h.glory ?? 0);
+        setXp(h.xp ?? 0);
+        setCurrentHp(h.hp ?? 100);
+        setBattles(h.battles ?? MAX_BATTLES);
+        setTotalSilverEarned(h.total_silver_earned ?? 0);
+        setStats({
+          strength: h.stat_strength ?? 5,
+          defense: h.stat_defense ?? 5,
+          agility: h.stat_agility ?? 5,
+          mastery: h.stat_mastery ?? 5,
+          vitality: h.stat_vitality ?? 5,
+        });
+        if (h.quest_progress && typeof h.quest_progress === "object") {
+          setQuestProgress(h.quest_progress);
+        }
+        if (h.quest_claimed && typeof h.quest_claimed === "object") {
+          setQuestClaimed(h.quest_claimed);
+        }
+        if (h.campaign_end_at) {
+          const endMs = new Date(h.campaign_end_at).getTime();
+          if (endMs > Date.now()) {
+            setCampaignEnd(endMs);
+            setCampaignReward(h.campaign_reward ?? 0);
+          }
+        }
+        loadedRef.current = true;
+      })
+      .catch(() => {
+        loadedRef.current = true;
+      });
+  }, []);
+
+  // Autosave with debounce
+  const triggerSave = useCallback((payload: object) => {
+    if (!loadedRef.current) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    setSaveStatus("saving");
+    saveTimerRef.current = setTimeout(() => {
+      const uid = getUserId();
+      fetch(HERO_SAVE_URL, {
+        method: "POST",
+        headers: { "X-User-Id": uid, "Content-Type": "application/json" },
+        body: JSON.stringify({ hero: payload }),
+      }).then(() => {
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 2000);
+      }).catch(() => setSaveStatus("idle"));
+    }, 1500);
+  }, []);
+
+  // Build save payload from current state
+  const buildPayload = useCallback(
+    (overrides: Partial<Record<string, unknown>> = {}) => ({
+      name: hero.name,
+      level: hero.level,
+      xp,
+      xp_next: hero.xpNext,
+      hp: currentHp,
+      max_hp: maxHp,
+      gold: hero.gold,
+      silver,
+      gems: hero.gems,
+      glory,
+      attack: hero.attack,
+      defense: hero.defense,
+      magic: hero.magic,
+      speed: hero.speed,
+      stat_strength: stats.strength,
+      stat_defense: stats.defense,
+      stat_agility: stats.agility,
+      stat_mastery: stats.mastery,
+      stat_vitality: stats.vitality,
+      battles,
+      battles_last_regen_at: null,
+      campaign_end_at: campaignEnd ? new Date(campaignEnd).toISOString() : null,
+      campaign_reward: campaignReward,
+      location: hero.location,
+      quest_progress: questProgress,
+      quest_claimed: questClaimed,
+      total_silver_earned: totalSilverEarned,
+      ...overrides,
+    }),
+    [hero, xp, currentHp, maxHp, silver, glory, stats, battles, campaignEnd, campaignReward, questProgress, questClaimed, totalSilverEarned],
+  );
+
   useEffect(() => {
     if (campaignEnd === null) return;
     const tick = () => {
@@ -149,8 +256,15 @@ export default function Index() {
       if (left <= 0) {
         setCampaignTimer(null);
         const reward = campaignReward;
-        setSilver((s) => s + reward);
-        setTotalSilverEarned((t) => t + reward);
+        setSilver((s) => {
+          const newSilver = s + reward;
+          setTotalSilverEarned((t) => {
+            const newTotal = t + reward;
+            triggerSave(buildPayload({ silver: newSilver, campaign_end_at: null, campaign_reward: 0, total_silver_earned: newTotal }));
+            return newTotal;
+          });
+          return newSilver;
+        });
         const now = new Date();
         const dateStr = `${now.getDate()} марта, ${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`;
         const entry: DiaryEntry = {
@@ -172,7 +286,7 @@ export default function Index() {
     const interval = setInterval(tick, 1000);
     tick();
     return () => clearInterval(interval);
-  }, [campaignEnd, campaignReward]);
+  }, [campaignEnd, campaignReward, triggerSave, buildPayload]);
 
   useEffect(() => {
     if (battles >= MAX_BATTLES) {
@@ -216,9 +330,12 @@ export default function Index() {
   const spendBattle = useCallback(() => {
     if (battles <= 0) return false;
     regenQueue.current = [...regenQueue.current, Date.now()];
-    setBattles((b) => b - 1);
+    setBattles((b) => {
+      triggerSave(buildPayload({ battles: b - 1 }));
+      return b - 1;
+    });
     return true;
-  }, [battles]);
+  }, [battles, triggerSave, buildPayload]);
 
   const addDiaryEntry = useCallback((entry: Omit<DiaryEntry, "id">) => {
     diaryIdRef.current += 1;
@@ -245,7 +362,17 @@ export default function Index() {
           text: `Победа над ${enemyName}! ${parts.join(", ")}.`,
           type: "duel_win",
         });
-        setQuestProgress((prev) => ({ ...prev, 1: (prev[1] || 0) + 1 }));
+        setQuestProgress((prev) => {
+          const next = { ...prev, 1: (prev[1] || 0) + 1 };
+          triggerSave(buildPayload({
+            silver: silver + reward.silver,
+            glory: glory + reward.glory,
+            xp: xp + reward.xp,
+            total_silver_earned: totalSilverEarned + reward.silver,
+            quest_progress: next,
+          }));
+          return next;
+        });
       } else {
         addDiaryEntry({
           date: dateStr,
@@ -253,18 +380,27 @@ export default function Index() {
           text: `Поражение от ${enemyName} в дуэли.`,
           type: "duel_lose",
         });
+        triggerSave(buildPayload());
       }
     },
-    [addDiaryEntry],
+    [addDiaryEntry, triggerSave, buildPayload, silver, glory, xp, totalSilverEarned],
   );
 
   const upgradeStat = (key: keyof HeroStats) => {
     const currentLevel = stats[key];
     const cost = STAT_COST(currentLevel);
     if (silver < cost) return;
-    setSilver((s) => s - cost);
-    setStats((prev) => ({ ...prev, [key]: prev[key] + 1 }));
-    setQuestProgress((prev) => ({ ...prev, 3: (prev[3] || 0) + 1 }));
+    const newSilver = silver - cost;
+    const newStats = { ...stats, [key]: stats[key] + 1 };
+    const newQP = { ...questProgress, 3: (questProgress[3] || 0) + 1 };
+    setSilver(newSilver);
+    setStats(newStats);
+    setQuestProgress(newQP);
+    triggerSave(buildPayload({
+      silver: newSilver,
+      [`stat_${key}`]: newStats[key],
+      quest_progress: newQP,
+    }));
   };
 
   const startCampaign = (option: (typeof CAMPAIGN_OPTIONS)[number]) => {
@@ -272,22 +408,31 @@ export default function Index() {
     const reward =
       Math.floor(Math.random() * (option.silverMax - option.silverMin + 1)) +
       option.silverMin;
+    const endAt = Date.now() + option.minutes * 60 * 1000;
     setCampaignReward(reward);
-    setCampaignEnd(Date.now() + option.minutes * 60 * 1000);
+    setCampaignEnd(endAt);
     setCampaignNotice(null);
+    triggerSave(buildPayload({
+      campaign_end_at: new Date(endAt).toISOString(),
+      campaign_reward: reward,
+    }));
   };
 
   const claimQuest = (quest: QuestDef) => {
     if (questClaimed[quest.id]) return;
     const progress = getQuestProgress(quest);
     if (progress < quest.target) return;
-    setQuestClaimed((prev) => ({ ...prev, [quest.id]: true }));
-    if (quest.id === 4) {
-      // gems reward
-    } else {
+    const newClaimed = { ...questClaimed, [quest.id]: true };
+    setQuestClaimed(newClaimed);
+    let newSilver = silver;
+    if (quest.id !== 4) {
       const match = quest.reward.match(/(\d+)/);
-      if (match) setSilver((s) => s + parseInt(match[1]));
+      if (match) {
+        newSilver = silver + parseInt(match[1]);
+        setSilver(newSilver);
+      }
     }
+    triggerSave(buildPayload({ silver: newSilver, quest_claimed: newClaimed }));
   };
 
   const getQuestProgress = (quest: QuestDef): number => {
@@ -309,7 +454,6 @@ export default function Index() {
   const isOnSection = activeSection !== "main";
   const isCampaignActive = campaignEnd !== null;
 
-  // suppress unused warning
   void xp;
 
   return (
@@ -324,6 +468,7 @@ export default function Index() {
         isCampaignActive={isCampaignActive}
         campaignNotice={campaignNotice}
         onOpenSection={openSection}
+        saveStatus={saveStatus}
       />
 
       <div style={{ maxWidth: 520, margin: "0 auto" }}>

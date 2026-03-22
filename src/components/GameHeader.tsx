@@ -29,6 +29,7 @@ interface GameHeaderProps {
   isCampaignActive: boolean;
   campaignNotice: string | null;
   onOpenSection: (id: SectionId) => void;
+  saveStatus?: "idle" | "saving" | "saved";
 }
 
 export default function GameHeader({
@@ -41,6 +42,7 @@ export default function GameHeader({
   isCampaignActive,
   campaignNotice,
   onOpenSection,
+  saveStatus = "idle",
 }: GameHeaderProps) {
   return (
     <header className="game-header">
@@ -64,6 +66,11 @@ export default function GameHeader({
             }}
           >
             {campaignNotice}
+          </div>
+        )}
+        {saveStatus !== "idle" && (
+          <div style={{ fontSize: 10, color: saveStatus === "saved" ? "#15803d" : "#b45309", marginBottom: 2 }}>
+            {saveStatus === "saving" ? "💾 сохранение..." : "✓ сохранено"}
           </div>
         )}
         <h1

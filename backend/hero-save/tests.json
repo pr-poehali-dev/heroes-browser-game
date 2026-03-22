@@ -1,0 +1,62 @@
+{
+  "tests": [
+    {
+      "name": "GET hero not found",
+      "method": "GET",
+      "path": "/",
+      "headers": { "X-User-Id": "test-user-001" },
+      "expectedStatus": 404,
+      "expectedBody": { "found": false },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST save hero",
+      "method": "POST",
+      "path": "/",
+      "headers": { "X-User-Id": "test-user-001", "Content-Type": "application/json" },
+      "body": {
+        "hero": {
+          "name": "Странник",
+          "level": 1,
+          "xp": 0,
+          "xp_next": 300,
+          "hp": 100,
+          "max_hp": 100,
+          "gold": 250,
+          "silver": 480,
+          "gems": 5,
+          "glory": 0,
+          "attack": 12,
+          "defense": 8,
+          "magic": 6,
+          "speed": 10,
+          "stat_strength": 5,
+          "stat_defense": 5,
+          "stat_agility": 5,
+          "stat_mastery": 5,
+          "stat_vitality": 5,
+          "battles": 6,
+          "battles_last_regen_at": null,
+          "campaign_end_at": null,
+          "campaign_reward": 0,
+          "location": "Поселок",
+          "quest_progress": {},
+          "quest_claimed": {},
+          "total_silver_earned": 0
+        }
+      },
+      "expectedStatus": 200,
+      "expectedBody": { "saved": true },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "GET hero found",
+      "method": "GET",
+      "path": "/",
+      "headers": { "X-User-Id": "test-user-001" },
+      "expectedStatus": 200,
+      "expectedBody": { "found": true },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
