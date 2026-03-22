@@ -457,7 +457,6 @@ export default function SectionPage({
             onDifficultyChange={onDifficultyChange}
             playerLevel={hero.level}
             onViewProfile={onViewProfile}
-            key="duel"
           />
         );
 

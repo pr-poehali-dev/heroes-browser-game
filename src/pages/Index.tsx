@@ -192,27 +192,6 @@ export default function Index() {
             setCampaignReward(h.campaign_reward ?? 0);
           }
         }
-        // Восстанавливаем очередь регенерации боёв
-        const loadedBattles = h.battles ?? MAX_BATTLES;
-        const spent = MAX_BATTLES - loadedBattles;
-        if (spent > 0 && h.battles_last_regen_at) {
-          const lastRegenTime = new Date(h.battles_last_regen_at).getTime();
-          const now = Date.now();
-          // Вычисляем сколько боёв восстановилось пока игрок был офлайн
-          const elapsed = now - lastRegenTime;
-          const regenedOffline = Math.floor(elapsed / REGEN_MS);
-          const stillSpent = Math.max(0, spent - regenedOffline);
-          const newBattles = Math.min(MAX_BATTLES, loadedBattles + regenedOffline);
-          setBattles(newBattles);
-          if (stillSpent > 0) {
-            // Заполняем очередь синтетическими временными метками
-            const queue: number[] = [];
-            for (let i = 0; i < stillSpent; i++) {
-              queue.push(lastRegenTime + i * REGEN_MS);
-            }
-            regenQueue.current = queue;
-          }
-        }
         loadedRef.current = true;
       })
       .catch(() => {
@@ -353,13 +332,9 @@ export default function Index() {
 
   const spendBattle = useCallback(() => {
     if (battles <= 0) return false;
-    const spentAt = Date.now();
-    regenQueue.current = [...regenQueue.current, spentAt];
+    regenQueue.current = [...regenQueue.current, Date.now()];
     setBattles((b) => {
-      triggerSave(buildPayload({
-        battles: b - 1,
-        battles_last_regen_at: new Date(spentAt).toISOString(),
-      }));
+      triggerSave(buildPayload({ battles: b - 1 }));
       return b - 1;
     });
     return true;
