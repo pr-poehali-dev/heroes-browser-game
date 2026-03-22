@@ -102,8 +102,8 @@ export default function MainPage({
             }}
           >
             {SECTIONS.map((s) => {
-              // В походе заблокированы только дуэли
-              const blocked = isCampaignActive && s.id === "duel";
+              const blocked =
+                isCampaignActive && s.id !== "campaign" && s.id !== "diary";
               return (
                 <button
                   key={s.id}
