@@ -61,7 +61,7 @@ export default function MainPage({
 
       <div className="game-panel">
         <div
-          className="animate-fade-in px-1"
+          className="animate-fade-in px-1 py-0 my-0 mx-0 bg-red-900 rounded-sm"
           style={{
             padding: "14px 16px",
             borderBottom: "1px solid var(--parchment-border)",
