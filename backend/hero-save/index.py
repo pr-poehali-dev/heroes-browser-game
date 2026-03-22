@@ -25,12 +25,10 @@ def get_conn():
 
 
 def esc(val):
-    """Escape string value for safe SQL embedding."""
     return str(val).replace("'", "''")
 
 
 def ts_lit(val):
-    """Return SQL timestamp literal or NULL."""
     if val is None:
         return "NULL"
     return f"'{esc(val)}'"
@@ -60,7 +58,10 @@ def handler(event: dict, context) -> dict:
                    attack, defense, magic, speed,
                    stat_strength, stat_defense, stat_agility, stat_mastery, stat_vitality,
                    battles, battles_last_regen_at, campaign_end_at, campaign_reward,
-                   location, quest_progress, quest_claimed, total_silver_earned
+                   location, quest_progress, quest_claimed, total_silver_earned,
+                   duel_wins, duel_losses, campaign_count, campaign_minutes_total,
+                   campaign_minutes, campaign_used_minutes_today, campaign_day,
+                   avatar, pets, mine_end_at, mine_depth
             FROM {SCHEMA}.heroes
             WHERE user_id = '{esc(user_id)}'
         """
@@ -80,11 +81,14 @@ def handler(event: dict, context) -> dict:
             "stat_strength", "stat_defense", "stat_agility", "stat_mastery", "stat_vitality",
             "battles", "battles_last_regen_at", "campaign_end_at", "campaign_reward",
             "location", "quest_progress", "quest_claimed", "total_silver_earned",
+            "duel_wins", "duel_losses", "campaign_count", "campaign_minutes_total",
+            "campaign_minutes", "campaign_used_minutes_today", "campaign_day",
+            "avatar", "pets", "mine_end_at", "mine_depth",
         ]
         data = dict(zip(keys, rows[0]))
 
-        for ts_field in ("battles_last_regen_at", "campaign_end_at"):
-            if data[ts_field] is not None:
+        for ts_field in ("battles_last_regen_at", "campaign_end_at", "mine_end_at"):
+            if data.get(ts_field) is not None:
                 data[ts_field] = data[ts_field].isoformat()
 
         return {
@@ -104,7 +108,7 @@ def handler(event: dict, context) -> dict:
         hp = int(h.get("hp", 100))
         max_hp = int(h.get("max_hp", 100))
         gold = int(h.get("gold", 250))
-        silver = int(h.get("silver", 49000))
+        silver = int(h.get("silver", 480))
         gems = int(h.get("gems", 5))
         glory = int(h.get("glory", 0))
         attack = int(h.get("attack", 12))
@@ -124,6 +128,17 @@ def handler(event: dict, context) -> dict:
         quest_progress = esc(json.dumps(h.get("quest_progress", {})))
         quest_claimed = esc(json.dumps(h.get("quest_claimed", {})))
         total_silver_earned = int(h.get("total_silver_earned", 0))
+        duel_wins = int(h.get("duel_wins", 0))
+        duel_losses = int(h.get("duel_losses", 0))
+        campaign_count = int(h.get("campaign_count", 0))
+        campaign_minutes_total = int(h.get("campaign_minutes_total", 0))
+        campaign_minutes = int(h.get("campaign_minutes", 0))
+        campaign_used_minutes_today = int(h.get("campaign_used_minutes_today", 0))
+        campaign_day = esc(h.get("campaign_day", ""))
+        avatar = esc(h.get("avatar", "m1"))
+        pets = esc(json.dumps(h.get("pets", [])))
+        mine_ea = ts_lit(h.get("mine_end_at"))
+        mine_depth = int(h.get("mine_depth", 0))
         uid = esc(user_id)
 
         sql = f"""
@@ -132,7 +147,10 @@ def handler(event: dict, context) -> dict:
                 attack, defense, magic, speed,
                 stat_strength, stat_defense, stat_agility, stat_mastery, stat_vitality,
                 battles, battles_last_regen_at, campaign_end_at, campaign_reward,
-                location, quest_progress, quest_claimed, total_silver_earned, updated_at
+                location, quest_progress, quest_claimed, total_silver_earned,
+                duel_wins, duel_losses, campaign_count, campaign_minutes_total,
+                campaign_minutes, campaign_used_minutes_today, campaign_day,
+                avatar, pets, mine_end_at, mine_depth, updated_at
             ) VALUES (
                 '{uid}', '{name}', {level}, {xp}, {xp_next}, {hp}, {max_hp},
                 {gold}, {silver}, {gems}, {glory},
@@ -140,37 +158,33 @@ def handler(event: dict, context) -> dict:
                 {stat_strength}, {stat_defense}, {stat_agility}, {stat_mastery}, {stat_vitality},
                 {battles}, {blr}, {cea}, {campaign_reward},
                 '{location}', '{quest_progress}'::jsonb, '{quest_claimed}'::jsonb,
-                {total_silver_earned}, NOW()
+                {total_silver_earned},
+                {duel_wins}, {duel_losses}, {campaign_count}, {campaign_minutes_total},
+                {campaign_minutes}, {campaign_used_minutes_today}, '{campaign_day}',
+                '{avatar}', '{pets}'::jsonb, {mine_ea}, {mine_depth}, NOW()
             )
             ON CONFLICT (user_id) DO UPDATE SET
-                name = EXCLUDED.name,
-                level = EXCLUDED.level,
-                xp = EXCLUDED.xp,
-                xp_next = EXCLUDED.xp_next,
-                hp = EXCLUDED.hp,
-                max_hp = EXCLUDED.max_hp,
-                gold = EXCLUDED.gold,
-                silver = EXCLUDED.silver,
-                gems = EXCLUDED.gems,
-                glory = EXCLUDED.glory,
-                attack = EXCLUDED.attack,
-                defense = EXCLUDED.defense,
-                magic = EXCLUDED.magic,
-                speed = EXCLUDED.speed,
-                stat_strength = EXCLUDED.stat_strength,
-                stat_defense = EXCLUDED.stat_defense,
-                stat_agility = EXCLUDED.stat_agility,
-                stat_mastery = EXCLUDED.stat_mastery,
-                stat_vitality = EXCLUDED.stat_vitality,
-                battles = EXCLUDED.battles,
+                name = EXCLUDED.name, level = EXCLUDED.level, xp = EXCLUDED.xp,
+                xp_next = EXCLUDED.xp_next, hp = EXCLUDED.hp, max_hp = EXCLUDED.max_hp,
+                gold = EXCLUDED.gold, silver = EXCLUDED.silver, gems = EXCLUDED.gems,
+                glory = EXCLUDED.glory, attack = EXCLUDED.attack, defense = EXCLUDED.defense,
+                magic = EXCLUDED.magic, speed = EXCLUDED.speed,
+                stat_strength = EXCLUDED.stat_strength, stat_defense = EXCLUDED.stat_defense,
+                stat_agility = EXCLUDED.stat_agility, stat_mastery = EXCLUDED.stat_mastery,
+                stat_vitality = EXCLUDED.stat_vitality, battles = EXCLUDED.battles,
                 battles_last_regen_at = EXCLUDED.battles_last_regen_at,
                 campaign_end_at = EXCLUDED.campaign_end_at,
-                campaign_reward = EXCLUDED.campaign_reward,
-                location = EXCLUDED.location,
-                quest_progress = EXCLUDED.quest_progress,
-                quest_claimed = EXCLUDED.quest_claimed,
+                campaign_reward = EXCLUDED.campaign_reward, location = EXCLUDED.location,
+                quest_progress = EXCLUDED.quest_progress, quest_claimed = EXCLUDED.quest_claimed,
                 total_silver_earned = EXCLUDED.total_silver_earned,
-                updated_at = NOW()
+                duel_wins = EXCLUDED.duel_wins, duel_losses = EXCLUDED.duel_losses,
+                campaign_count = EXCLUDED.campaign_count,
+                campaign_minutes_total = EXCLUDED.campaign_minutes_total,
+                campaign_minutes = EXCLUDED.campaign_minutes,
+                campaign_used_minutes_today = EXCLUDED.campaign_used_minutes_today,
+                campaign_day = EXCLUDED.campaign_day, avatar = EXCLUDED.avatar,
+                pets = EXCLUDED.pets, mine_end_at = EXCLUDED.mine_end_at,
+                mine_depth = EXCLUDED.mine_depth, updated_at = NOW()
         """
         conn.run(sql)
         conn.close()
