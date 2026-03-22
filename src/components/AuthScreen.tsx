@@ -143,7 +143,7 @@ export default function AuthScreen({ onAuth }: AuthScreenProps) {
               )}
 
               <div style={{ marginBottom: 14 }}>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--text-medium)", marginBottom: 5 }}>Ник героя</label>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--text-medium)", marginBottom: 5 }}>Ник персонажа</label>
                 <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Странник" maxLength={32} required style={inputStyle} />
               </div>
 
