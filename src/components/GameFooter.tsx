@@ -17,9 +17,7 @@ export default function GameFooter() {
         <a className="footer-link">Помощь</a>
         <a className="footer-link">Контакты</a>
       </div>
-      <div style={{ fontSize: 11, color: "var(--text-medium)" }}>
-        ⚜ Хранители — 2026 ⚜
-      </div>
+      <div style={{ fontSize: 11, color: "var(--text-medium)" }}>⚜ ⚜</div>
     </footer>
   );
 }
