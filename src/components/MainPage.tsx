@@ -139,7 +139,7 @@ export default function MainPage({
         </div>
 
         <div
-          className="bottom-nav"
+          className="bottom-nav py-0.5"
           style={{
             padding: "8px 16px",
             display: "flex",
