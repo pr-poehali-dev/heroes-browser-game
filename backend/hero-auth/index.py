@@ -43,6 +43,7 @@ def handler(event: dict, context) -> dict:
     action = body.get("action", "")
     username = (body.get("username") or "").strip()
     password = body.get("password") or ""
+    avatar = esc(body.get("avatar", "m1"))
 
     if not username or not password:
         return {
@@ -80,8 +81,8 @@ def handler(event: dict, context) -> dict:
         # Create hero record for new user
         conn.run(
             f"""
-            INSERT INTO {SCHEMA}.heroes (user_id, username, name, updated_at)
-            VALUES ('{esc(user_id)}', '{esc(username)}', '{esc(username)}', NOW())
+            INSERT INTO {SCHEMA}.heroes (user_id, username, name, avatar, updated_at)
+            VALUES ('{esc(user_id)}', '{esc(username)}', '{esc(username)}', '{avatar}', NOW())
             ON CONFLICT (user_id) DO NOTHING
             """
         )
@@ -90,7 +91,7 @@ def handler(event: dict, context) -> dict:
         return {
             "statusCode": 200,
             "headers": CORS_HEADERS,
-            "body": json.dumps({"success": True, "user_id": user_id, "username": username}),
+            "body": json.dumps({"success": True, "user_id": user_id, "username": username, "avatar": avatar}),
         }
 
     if action == "login":
@@ -117,12 +118,14 @@ def handler(event: dict, context) -> dict:
 
         # Get or create user_id from heroes table
         hero_rows = conn.run(
-            f"SELECT user_id FROM {SCHEMA}.heroes WHERE username = '{esc(username)}'"
+            f"SELECT user_id, avatar FROM {SCHEMA}.heroes WHERE username = '{esc(username)}'"
         )
         if hero_rows:
             user_id = hero_rows[0][0]
+            hero_avatar = hero_rows[0][1] or "m1"
         else:
             user_id = "u_" + secrets.token_hex(16)
+            hero_avatar = "m1"
             conn.run(
                 f"""
                 INSERT INTO {SCHEMA}.heroes (user_id, username, name, updated_at)
@@ -136,7 +139,7 @@ def handler(event: dict, context) -> dict:
         return {
             "statusCode": 200,
             "headers": CORS_HEADERS,
-            "body": json.dumps({"success": True, "user_id": user_id, "username": username}),
+            "body": json.dumps({"success": True, "user_id": user_id, "username": username, "avatar": hero_avatar}),
         }
 
     conn.close()
