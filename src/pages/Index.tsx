@@ -8,8 +8,7 @@ import AuthScreen from "@/components/AuthScreen";
 
 const MAX_BATTLES = 6;
 const REGEN_MS = 5 * 60 * 1000;
-const HERO_SAVE_URL =
-  "https://functions.poehali.dev/a540a07e-c67f-47e9-bb14-59ba436a93d8";
+const HERO_SAVE_URL = "https://functions.poehali.dev/a540a07e-c67f-47e9-bb14-59ba436a93d8";
 
 export interface DiaryEntry {
   id: number;
@@ -75,73 +74,21 @@ interface QuestDef {
   desc: string;
   reward: string;
   target: number;
-  type:
-    | "duel_wins"
-    | "campaign_count"
-    | "upgrade_stat"
-    | "silver_earn"
-    | "glory_earn";
+  type: "duel_wins" | "campaign_count" | "upgrade_stat" | "silver_earn" | "glory_earn";
 }
 
 const QUESTS_DEF: QuestDef[] = [
-  {
-    id: 1,
-    title: "Дуэлянт",
-    desc: "Одержи 3 победы в дуэлях",
-    reward: "50 серебра",
-    target: 3,
-    type: "duel_wins",
-  },
-  {
-    id: 2,
-    title: "Путешественник",
-    desc: "Соверши 2 похода",
-    reward: "30 серебра",
-    target: 2,
-    type: "campaign_count",
-  },
-  {
-    id: 3,
-    title: "Тренировка",
-    desc: "Улучши любой параметр 3 раза",
-    reward: "80 серебра",
-    target: 3,
-    type: "upgrade_stat",
-  },
-  {
-    id: 4,
-    title: "Богач",
-    desc: "Заработай 200 серебра",
-    reward: "1 💎 кристалл",
-    target: 200,
-    type: "silver_earn",
-  },
-  {
-    id: 5,
-    title: "Славный герой",
-    desc: "Набери 5 славы",
-    reward: "100 серебра",
-    target: 5,
-    type: "glory_earn",
-  },
+  { id: 1, title: "Дуэлянт", desc: "Одержи 3 победы в дуэлях", reward: "50 серебра", target: 3, type: "duel_wins" },
+  { id: 2, title: "Путешественник", desc: "Соверши 2 похода", reward: "30 серебра", target: 2, type: "campaign_count" },
+  { id: 3, title: "Тренировка", desc: "Улучши любой параметр 3 раза", reward: "80 серебра", target: 3, type: "upgrade_stat" },
+  { id: 4, title: "Богач", desc: "Заработай 200 серебра", reward: "1 💎 кристалл", target: 200, type: "silver_earn" },
+  { id: 5, title: "Славный герой", desc: "Набери 5 славы", reward: "100 серебра", target: 5, type: "glory_earn" },
 ];
 
 export type SectionId =
-  | "diary"
-  | "quests"
-  | "duel"
-  | "village"
-  | "campaign"
-  | "dungeon"
-  | "dragon"
-  | "orcs"
-  | "order"
-  | "guild"
-  | "menagerie"
-  | "top"
-  | "main"
-  | "hero"
-  | "profile";
+  | "diary" | "quests" | "duel" | "village" | "campaign" | "dungeon"
+  | "dragon" | "orcs" | "order" | "guild" | "menagerie" | "top"
+  | "main" | "hero" | "profile";
 
 function getSavedSession(): { userId: string; username: string } | null {
   const userId = localStorage.getItem("heroes_user_id");
@@ -152,10 +99,7 @@ function getSavedSession(): { userId: string; username: string } | null {
 
 export default function Index() {
   const savedSession = getSavedSession();
-  const [session, setSession] = useState<{
-    userId: string;
-    username: string;
-  } | null>(savedSession);
+  const [session, setSession] = useState<{ userId: string; username: string } | null>(savedSession);
 
   const [activeSection, setActiveSection] = useState<SectionId>("main");
   const [hero] = useState(HERO_BASE);
@@ -163,30 +107,22 @@ export default function Index() {
   const [glory, setGlory] = useState(0);
   const [xp, setXp] = useState(0);
   const [stats, setStats] = useState<HeroStats>(INITIAL_STATS);
-  const [duelDifficulty, setDuelDifficulty] = useState<
-    "higher" | "equal" | "lower"
-  >("equal");
-  const [avatarId, setAvatarId] = useState<string>(
-    localStorage.getItem("heroes_avatar") || "m1",
-  );
+  const [duelDifficulty, setDuelDifficulty] = useState<"higher" | "equal" | "lower">("equal");
+  const [avatarId, setAvatarId] = useState<string>(localStorage.getItem("heroes_avatar") || "m1");
 
   // Статистика побед/поражений/походов/времени в походе
   const [duelWins, setDuelWins] = useState(0);
   const [duelLosses, setDuelLosses] = useState(0);
+  const [campaignCount, setCampaignCount] = useState(0);
   const [campaignMinutesTotal, setCampaignMinutesTotal] = useState(0);
 
   // HP: максимум = 100 + vitality*15, восстановление = 10% от максимума в час
   const maxHp = 100 + stats.vitality * 15;
   const [currentHp, setCurrentHp] = useState(100);
-  const regenPerHour = Math.round(maxHp * 0.1);
+  const regenPerHour = Math.round(maxHp * 0.10);
 
-  const [profileView, setProfileView] = useState<{
-    name: string;
-    level: number;
-  } | null>(null);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
-    "idle",
-  );
+  const [profileView, setProfileView] = useState<{ name: string; level: number } | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadedRef = useRef(false);
 
@@ -198,7 +134,7 @@ export default function Index() {
       setCurrentHp((prev) => {
         const max = 100 + stats.vitality * 15;
         if (prev >= max) return prev;
-        const perHour = Math.round(max * 0.1);
+        const perHour = Math.round(max * 0.10);
         hpAccRef.current += perHour / 3600;
         if (hpAccRef.current >= 1) {
           const add = Math.floor(hpAccRef.current);
@@ -226,13 +162,7 @@ export default function Index() {
   const [campaignMinutes, setCampaignMinutes] = useState(0); // продолжительность текущего/последнего похода
   const [campaignUsedMinutesToday, setCampaignUsedMinutesToday] = useState(0); // лимит
 
-  const [questProgress, setQuestProgress] = useState<Record<number, number>>({
-    1: 0,
-    2: 0,
-    3: 0,
-    4: 0,
-    5: 0,
-  });
+  const [questProgress, setQuestProgress] = useState<Record<number, number>>({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
   const [questClaimed, setQuestClaimed] = useState<Record<number, boolean>>({});
   const [totalSilverEarned, setTotalSilverEarned] = useState(0);
 
@@ -250,10 +180,7 @@ export default function Index() {
     fetch(HERO_SAVE_URL, { headers: { "X-User-Id": uid } })
       .then((r) => r.json())
       .then((data) => {
-        if (!data.found) {
-          loadedRef.current = true;
-          return;
-        }
+        if (!data.found) { loadedRef.current = true; return; }
         const h = data.hero;
         setSilver(h.silver ?? 480);
         setGlory(h.glory ?? 0);
@@ -265,10 +192,7 @@ export default function Index() {
         setDuelLosses(h.duel_losses ?? 0);
         setCampaignCount(h.campaign_count ?? 0);
         setCampaignMinutesTotal(h.campaign_minutes_total ?? 0);
-        if (h.avatar) {
-          setAvatarId(h.avatar);
-          localStorage.setItem("heroes_avatar", h.avatar);
-        }
+        if (h.avatar) { setAvatarId(h.avatar); localStorage.setItem("heroes_avatar", h.avatar); }
         setStats({
           strength: h.stat_strength ?? 5,
           defense: h.stat_defense ?? 5,
@@ -276,19 +200,15 @@ export default function Index() {
           mastery: h.stat_mastery ?? 5,
           vitality: h.stat_vitality ?? 5,
         });
-        if (h.quest_progress && typeof h.quest_progress === "object")
-          setQuestProgress(h.quest_progress);
-        if (h.quest_claimed && typeof h.quest_claimed === "object")
-          setQuestClaimed(h.quest_claimed);
+        if (h.quest_progress && typeof h.quest_progress === "object") setQuestProgress(h.quest_progress);
+        if (h.quest_claimed && typeof h.quest_claimed === "object") setQuestClaimed(h.quest_claimed);
         if (h.pets && Array.isArray(h.pets)) setPets(h.pets);
         if (h.campaign_used_minutes_today) {
           // Сбрасываем если прошли сутки
           const lastDay = h.campaign_day ?? "";
           const today = new Date().toISOString().slice(0, 10);
-          if (lastDay !== today) {
-            setCampaignUsedMinutesToday(0);
-          } else
-            setCampaignUsedMinutesToday(h.campaign_used_minutes_today ?? 0);
+          if (lastDay !== today) { setCampaignUsedMinutesToday(0); }
+          else setCampaignUsedMinutesToday(h.campaign_used_minutes_today ?? 0);
         }
         if (h.campaign_end_at) {
           const endMs = new Date(h.campaign_end_at).getTime();
@@ -315,10 +235,7 @@ export default function Index() {
           const elapsed = now - lastRegenTime;
           const regenedOffline = Math.floor(elapsed / REGEN_MS);
           const stillSpent = Math.max(0, spent - regenedOffline);
-          const newBattles = Math.min(
-            MAX_BATTLES,
-            loadedBattles + regenedOffline,
-          );
+          const newBattles = Math.min(MAX_BATTLES, loadedBattles + regenedOffline);
           setBattles(newBattles);
           if (stillSpent > 0) {
             const queue: number[] = [];
@@ -330,33 +247,26 @@ export default function Index() {
         }
         loadedRef.current = true;
       })
-      .catch(() => {
-        loadedRef.current = true;
-      });
+      .catch(() => { loadedRef.current = true; });
   }, [session]);
 
   // Autosave
-  const triggerSave = useCallback(
-    (payload: object) => {
-      if (!loadedRef.current || !session) return;
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      setSaveStatus("saving");
-      saveTimerRef.current = setTimeout(() => {
-        const uid = session.userId;
-        fetch(HERO_SAVE_URL, {
-          method: "POST",
-          headers: { "X-User-Id": uid, "Content-Type": "application/json" },
-          body: JSON.stringify({ hero: payload }),
-        })
-          .then(() => {
-            setSaveStatus("saved");
-            setTimeout(() => setSaveStatus("idle"), 2000);
-          })
-          .catch(() => setSaveStatus("idle"));
-      }, 1500);
-    },
-    [session],
-  );
+  const triggerSave = useCallback((payload: object) => {
+    if (!loadedRef.current || !session) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    setSaveStatus("saving");
+    saveTimerRef.current = setTimeout(() => {
+      const uid = session.userId;
+      fetch(HERO_SAVE_URL, {
+        method: "POST",
+        headers: { "X-User-Id": uid, "Content-Type": "application/json" },
+        body: JSON.stringify({ hero: payload }),
+      }).then(() => {
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 2000);
+      }).catch(() => setSaveStatus("idle"));
+    }, 1500);
+  }, [session]);
 
   const buildPayload = useCallback(
     (overrides: Partial<Record<string, unknown>> = {}) => ({
@@ -400,31 +310,7 @@ export default function Index() {
       mine_depth: mineDepth,
       ...overrides,
     }),
-    [
-      hero,
-      xp,
-      currentHp,
-      maxHp,
-      silver,
-      glory,
-      stats,
-      battles,
-      campaignEnd,
-      campaignReward,
-      campaignMinutes,
-      campaignUsedMinutesToday,
-      campaignCount,
-      campaignMinutesTotal,
-      questProgress,
-      questClaimed,
-      totalSilverEarned,
-      duelWins,
-      duelLosses,
-      avatarId,
-      pets,
-      mineEnd,
-      mineDepth,
-    ],
+    [hero, xp, currentHp, maxHp, silver, glory, stats, battles, campaignEnd, campaignReward, campaignMinutes, campaignUsedMinutesToday, campaignCount, campaignMinutesTotal, questProgress, questClaimed, totalSilverEarned, duelWins, duelLosses, avatarId, pets, mineEnd, mineDepth],
   );
 
   // Поход таймер
@@ -444,16 +330,14 @@ export default function Index() {
               const newCount = c + 1;
               setCampaignMinutesTotal((m) => {
                 const newMins = m + mins;
-                triggerSave(
-                  buildPayload({
-                    silver: newSilver,
-                    campaign_end_at: null,
-                    campaign_reward: 0,
-                    total_silver_earned: newTotal,
-                    campaign_count: newCount,
-                    campaign_minutes_total: newMins,
-                  }),
-                );
+                triggerSave(buildPayload({
+                  silver: newSilver,
+                  campaign_end_at: null,
+                  campaign_reward: 0,
+                  total_silver_earned: newTotal,
+                  campaign_count: newCount,
+                  campaign_minutes_total: newMins,
+                }));
                 return newMins;
               });
               return newCount;
@@ -525,11 +409,7 @@ export default function Index() {
           }
           return next;
         });
-        setRegenTimer(
-          regenQueue.current.length > 0
-            ? regenQueue.current[0] + REGEN_MS - Date.now()
-            : null,
-        );
+        setRegenTimer(regenQueue.current.length > 0 ? regenQueue.current[0] + REGEN_MS - Date.now() : null);
       } else {
         setRegenTimer(left);
       }
@@ -537,9 +417,7 @@ export default function Index() {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(tick, 1000);
     tick();
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [battles]);
 
   const spendBattle = useCallback(() => {
@@ -547,12 +425,10 @@ export default function Index() {
     const spentAt = Date.now();
     regenQueue.current = [...regenQueue.current, spentAt];
     setBattles((b) => {
-      triggerSave(
-        buildPayload({
-          battles: b - 1,
-          battles_last_regen_at: new Date(spentAt).toISOString(),
-        }),
-      );
+      triggerSave(buildPayload({
+        battles: b - 1,
+        battles_last_regen_at: new Date(spentAt).toISOString(),
+      }));
       return b - 1;
     });
     return true;
@@ -578,48 +454,26 @@ export default function Index() {
         if (reward.glory > 0) parts.push(`+${reward.glory} ⭐ славы`);
         if (reward.xp > 0) parts.push(`+${reward.xp} опыта`);
         if (reward.silver > 0) parts.push(`+${reward.silver} серебра`);
-        addDiaryEntry({
-          date: dateStr,
-          icon: "🏆",
-          text: `Победа над ${enemyName}! ${parts.join(", ")}.`,
-          type: "duel_win",
-        });
+        addDiaryEntry({ date: dateStr, icon: "🏆", text: `Победа над ${enemyName}! ${parts.join(", ")}.`, type: "duel_win" });
         setQuestProgress((prev) => {
           const next = { ...prev, 1: (prev[1] || 0) + 1 };
-          triggerSave(
-            buildPayload({
-              silver: silver + reward.silver,
-              glory: glory + reward.glory,
-              xp: xp + reward.xp,
-              total_silver_earned: totalSilverEarned + reward.silver,
-              quest_progress: next,
-              duel_wins: duelWins + 1,
-            }),
-          );
+          triggerSave(buildPayload({
+            silver: silver + reward.silver,
+            glory: glory + reward.glory,
+            xp: xp + reward.xp,
+            total_silver_earned: totalSilverEarned + reward.silver,
+            quest_progress: next,
+            duel_wins: duelWins + 1,
+          }));
           return next;
         });
       } else {
         setDuelLosses((l) => l + 1);
-        addDiaryEntry({
-          date: dateStr,
-          icon: "💀",
-          text: `Поражение от ${enemyName} в дуэли.`,
-          type: "duel_lose",
-        });
+        addDiaryEntry({ date: dateStr, icon: "💀", text: `Поражение от ${enemyName} в дуэли.`, type: "duel_lose" });
         triggerSave(buildPayload({ duel_losses: duelLosses + 1 }));
       }
     },
-    [
-      addDiaryEntry,
-      triggerSave,
-      buildPayload,
-      silver,
-      glory,
-      xp,
-      totalSilverEarned,
-      duelWins,
-      duelLosses,
-    ],
+    [addDiaryEntry, triggerSave, buildPayload, silver, glory, xp, totalSilverEarned, duelWins, duelLosses],
   );
 
   const upgradeStat = (key: keyof HeroStats) => {
@@ -632,38 +486,26 @@ export default function Index() {
     setSilver(newSilver);
     setStats(newStats);
     setQuestProgress(newQP);
-    triggerSave(
-      buildPayload({
-        silver: newSilver,
-        [`stat_${key}`]: newStats[key],
-        quest_progress: newQP,
-      }),
-    );
+    triggerSave(buildPayload({ silver: newSilver, [`stat_${key}`]: newStats[key], quest_progress: newQP }));
   };
 
   const startCampaign = (minutes: number) => {
     if (campaignEnd !== null) return;
-    const opt =
-      CAMPAIGN_OPTIONS_LIST.find((o) => o.minutes === minutes) ||
-      CAMPAIGN_OPTIONS_LIST[0];
-    const reward =
-      Math.floor(Math.random() * (opt.silverMax - opt.silverMin + 1)) +
-      opt.silverMin;
+    const opt = CAMPAIGN_OPTIONS_LIST.find(o => o.minutes === minutes) || CAMPAIGN_OPTIONS_LIST[0];
+    const reward = Math.floor(Math.random() * (opt.silverMax - opt.silverMin + 1)) + opt.silverMin;
     const endAt = Date.now() + minutes * 60 * 1000;
     setCampaignReward(reward);
     setCampaignEnd(endAt);
     setCampaignMinutes(minutes);
     setCampaignUsedMinutesToday((prev) => prev + minutes);
     setCampaignNotice(null);
-    triggerSave(
-      buildPayload({
-        campaign_end_at: new Date(endAt).toISOString(),
-        campaign_reward: reward,
-        campaign_minutes: minutes,
-        campaign_used_minutes_today: campaignUsedMinutesToday + minutes,
-        campaign_day: new Date().toISOString().slice(0, 10),
-      }),
-    );
+    triggerSave(buildPayload({
+      campaign_end_at: new Date(endAt).toISOString(),
+      campaign_reward: reward,
+      campaign_minutes: minutes,
+      campaign_used_minutes_today: campaignUsedMinutesToday + minutes,
+      campaign_day: new Date().toISOString().slice(0, 10),
+    }));
   };
 
   const claimQuest = (quest: QuestDef) => {
@@ -675,10 +517,7 @@ export default function Index() {
     let newSilver = silver;
     if (quest.id !== 4) {
       const match = quest.reward.match(/(\d+)/);
-      if (match) {
-        newSilver = silver + parseInt(match[1]);
-        setSilver(newSilver);
-      }
+      if (match) { newSilver = silver + parseInt(match[1]); setSilver(newSilver); }
     }
     triggerSave(buildPayload({ silver: newSilver, quest_claimed: newClaimed }));
   };
@@ -696,15 +535,13 @@ export default function Index() {
   };
 
   const upgradePet = (petId: string) => {
-    const existing = pets.find((p) => p.id === petId);
+    const existing = pets.find(p => p.id === petId);
     if (existing) {
       const cost = existing.level * 80;
       if (silver < cost) return;
       const newSilver = silver - cost;
       setSilver(newSilver);
-      const newPets = pets.map((p) =>
-        p.id === petId ? { ...p, level: p.level + 1 } : p,
-      );
+      const newPets = pets.map(p => p.id === petId ? { ...p, level: p.level + 1 } : p);
       setPets(newPets);
       triggerSave(buildPayload({ silver: newSilver, pets: newPets }));
     } else {
@@ -723,12 +560,7 @@ export default function Index() {
     const endAt = Date.now() + 20 * 60 * 1000;
     setMineEnd(endAt);
     setMineDepth(depth);
-    triggerSave(
-      buildPayload({
-        mine_end_at: new Date(endAt).toISOString(),
-        mine_depth: depth,
-      }),
-    );
+    triggerSave(buildPayload({ mine_end_at: new Date(endAt).toISOString(), mine_depth: depth }));
   };
 
   const claimMine = (): number => {
@@ -762,17 +594,10 @@ export default function Index() {
   void xp;
 
   if (!session) {
-    return (
-      <AuthScreen
-        onAuth={(userId, username, avatar) => {
-          if (avatar) {
-            setAvatarId(avatar);
-            localStorage.setItem("heroes_avatar", avatar);
-          }
-          setSession({ userId, username });
-        }}
-      />
-    );
+    return <AuthScreen onAuth={(userId, username, avatar) => {
+      if (avatar) { setAvatarId(avatar); localStorage.setItem("heroes_avatar", avatar); }
+      setSession({ userId, username });
+    }} />;
   }
 
   return (
