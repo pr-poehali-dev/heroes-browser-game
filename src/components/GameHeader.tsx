@@ -70,7 +70,7 @@ export default function GameHeader({
           className="game-title"
           style={{ fontSize: 22, letterSpacing: "0.3em" }}
         >
-          ⚜ Г Е Р О И ⚜
+          ⚜ В И К И Н Г И ⚜
         </h1>
       </div>
 
