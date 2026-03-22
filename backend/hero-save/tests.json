@@ -13,7 +13,10 @@
       "name": "POST save hero",
       "method": "POST",
       "path": "/",
-      "headers": { "X-User-Id": "test-user-001", "Content-Type": "application/json" },
+      "headers": {
+        "X-User-Id": "test-user-001",
+        "Content-Type": "application/json"
+      },
       "body": {
         "hero": {
           "name": "Странник",
@@ -26,7 +29,7 @@
           "silver": 480,
           "gems": 5,
           "glory": 0,
-          "attack": 12,
+          "attack": 999,
           "defense": 8,
           "magic": 6,
           "speed": 10,
