@@ -259,7 +259,7 @@ export default function SectionPage({
                     color: "var(--text-medium)",
                   }}
                 >
-                  Записей пока нет. Сражайся в дуэлях и ходи в походы!
+                  Записей пока нет.!
                 </div>
               )}
               {filteredDiary.map((e) => {
@@ -481,7 +481,7 @@ export default function SectionPage({
                 textAlign: "center",
               }}
             >
-              Твой Герой
+              Твой персонаж
             </h2>
 
             <div style={{ textAlign: "center", marginBottom: 16 }}>
@@ -778,7 +778,7 @@ export default function SectionPage({
                 textAlign: "center",
               }}
             >
-              Профиль героя
+              Профиль игрока
             </h2>
             <div style={{ textAlign: "center", marginBottom: 16 }}>
               <div style={{ fontSize: 48, marginBottom: 8 }}>👤</div>
