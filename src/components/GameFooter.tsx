@@ -18,7 +18,7 @@ export default function GameFooter() {
         <a className="footer-link">Контакты</a>
       </div>
       <div style={{ fontSize: 11, color: "var(--text-medium)" }}>
-        ⚜ Герои — 2025 ⚜
+        ⚜ Хранители — 2026 ⚜
       </div>
     </footer>
   );
