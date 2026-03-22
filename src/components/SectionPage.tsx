@@ -1,10 +1,6 @@
 import Icon from "@/components/ui/icon";
 import DuelSection, { type DuelReward } from "@/components/DuelSection";
-import {
-  DiaryEntry,
-  HeroStats,
-  SectionId,
-} from "@/pages/Index";
+import { DiaryEntry, HeroStats, SectionId } from "@/pages/Index";
 
 const AVATAR_URL =
   "https://cdn.poehali.dev/projects/e03d01dd-c207-488c-aa14-9e40184b6c24/bucket/884f7408-826e-40ed-b0c4-6d765a19bc86.jpg";
@@ -35,20 +31,39 @@ const INITIAL_STATS: HeroStats = {
 const STAT_COST = (level: number) => level * 50;
 
 const STAT_INFO = [
-  { key: "strength" as const, label: "Сила", icon: "💪", desc: "Увеличивает урон атаки" },
-  { key: "defense" as const, label: "Защита", icon: "🛡️", desc: "Снижает получаемый урон" },
-  { key: "agility" as const, label: "Ловкость", icon: "🏃", desc: "Повышает шанс уклонения и скорость" },
-  { key: "mastery" as const, label: "Мастерство", icon: "⚔️", desc: "Увеличивает крит и точность" },
-  { key: "vitality" as const, label: "Живучесть", icon: "❤️", desc: "Увеличивает максимальное HP и восстановление" },
+  {
+    key: "strength" as const,
+    label: "Сила",
+    icon: "💪",
+    desc: "Увеличивает урон атаки",
+  },
+  {
+    key: "defense" as const,
+    label: "Защита",
+    icon: "🛡️",
+    desc: "Снижает получаемый урон",
+  },
+  {
+    key: "agility" as const,
+    label: "Ловкость",
+    icon: "🏃",
+    desc: "Повышает шанс уклонения и скорость",
+  },
+  {
+    key: "mastery" as const,
+    label: "Мастерство",
+    icon: "⚔️",
+    desc: "Увеличивает крит и точность",
+  },
+  {
+    key: "vitality" as const,
+    label: "Живучесть",
+    icon: "❤️",
+    desc: "Увеличивает максимальное HP и восстановление",
+  },
 ];
 
-const TOP_HEROES = [
-  { rank: 1, name: "Громозека", level: 47, guild: "Орден Огня", power: 18450 },
-  { rank: 2, name: "Ведьмак77", level: 44, guild: "Серые Волки", power: 16200 },
-  { rank: 3, name: "Стальной", level: 43, guild: "Орден Огня", power: 15800 },
-  { rank: 4, name: "ТёмнаяЗвезда", level: 41, guild: "Одиночки", power: 14100 },
-  { rank: 5, name: "Скиталец", level: 38, guild: "Серые Волки", power: 12900 },
-];
+const TOP_HEROES = [];
 
 const CAMPAIGN_OPTIONS = [
   { minutes: 10, label: "10 минут", silverMin: 5, silverMax: 15 },
@@ -65,15 +80,55 @@ interface QuestDef {
   desc: string;
   reward: string;
   target: number;
-  type: "duel_wins" | "campaign_count" | "upgrade_stat" | "silver_earn" | "glory_earn";
+  type:
+    | "duel_wins"
+    | "campaign_count"
+    | "upgrade_stat"
+    | "silver_earn"
+    | "glory_earn";
 }
 
 const QUESTS_DEF: QuestDef[] = [
-  { id: 1, title: "Дуэлянт", desc: "Одержи 3 победы в дуэлях", reward: "50 серебра", target: 3, type: "duel_wins" },
-  { id: 2, title: "Путешественник", desc: "Соверши 2 похода", reward: "30 серебра", target: 2, type: "campaign_count" },
-  { id: 3, title: "Тренировка", desc: "Улучши любой параметр 3 раза", reward: "80 серебра", target: 3, type: "upgrade_stat" },
-  { id: 4, title: "Богач", desc: "Заработай 200 серебра", reward: "1 💎 кристалл", target: 200, type: "silver_earn" },
-  { id: 5, title: "Славный герой", desc: "Набери 5 славы", reward: "100 серебра", target: 5, type: "glory_earn" },
+  {
+    id: 1,
+    title: "Дуэлянт",
+    desc: "Одержи 3 победы в дуэлях",
+    reward: "50 серебра",
+    target: 3,
+    type: "duel_wins",
+  },
+  {
+    id: 2,
+    title: "Путешественник",
+    desc: "Соверши 2 похода",
+    reward: "30 серебра",
+    target: 2,
+    type: "campaign_count",
+  },
+  {
+    id: 3,
+    title: "Тренировка",
+    desc: "Улучши любой параметр 3 раза",
+    reward: "80 серебра",
+    target: 3,
+    type: "upgrade_stat",
+  },
+  {
+    id: 4,
+    title: "Богач",
+    desc: "Заработай 200 серебра",
+    reward: "1 💎 кристалл",
+    target: 200,
+    type: "silver_earn",
+  },
+  {
+    id: 5,
+    title: "Славный герой",
+    desc: "Набери 5 славы",
+    reward: "100 серебра",
+    target: 5,
+    type: "glory_earn",
+  },
 ];
 
 function formatTimer(ms: number) {
@@ -88,7 +143,16 @@ function formatTimer(ms: number) {
 
 interface SectionPageProps {
   activeSection: SectionId;
-  hero: { name: string; level: number; attack: number; defense: number; magic: number; speed: number; hp: number; maxHp: number };
+  hero: {
+    name: string;
+    level: number;
+    attack: number;
+    defense: number;
+    magic: number;
+    speed: number;
+    hp: number;
+    maxHp: number;
+  };
   silver: number;
   glory: number;
   stats: HeroStats;
@@ -107,7 +171,11 @@ interface SectionPageProps {
   profileView: { name: string; level: number } | null;
   onOpenSection: (id: SectionId) => void;
   onSpendBattle: () => boolean;
-  onDuelEnd: (result: "victory" | "defeat", enemyName: string, reward: DuelReward) => void;
+  onDuelEnd: (
+    result: "victory" | "defeat",
+    enemyName: string,
+    reward: DuelReward,
+  ) => void;
   onUpgradeStat: (key: keyof HeroStats) => void;
   onStartCampaign: (option: (typeof CAMPAIGN_OPTIONS)[number]) => void;
   onClaimQuest: (quest: QuestDef) => void;
@@ -163,7 +231,10 @@ export default function SectionPage({
     switch (activeSection) {
       case "diary": {
         const filteredDiary = diary.filter(
-          (e) => e.type === "duel_win" || e.type === "duel_lose" || e.type === "campaign",
+          (e) =>
+            e.type === "duel_win" ||
+            e.type === "duel_lose" ||
+            e.type === "campaign",
         );
         return (
           <div className="animate-fade-in">
@@ -193,9 +264,17 @@ export default function SectionPage({
               )}
               {filteredDiary.map((e) => {
                 const bg =
-                  e.type === "duel_win" ? "#f0fdf4" : e.type === "campaign" ? "#eff6ff" : "#fff5f5";
+                  e.type === "duel_win"
+                    ? "#f0fdf4"
+                    : e.type === "campaign"
+                      ? "#eff6ff"
+                      : "#fff5f5";
                 const border =
-                  e.type === "duel_win" ? "#86efac" : e.type === "campaign" ? "#93c5fd" : "#fca5a5";
+                  e.type === "duel_win"
+                    ? "#86efac"
+                    : e.type === "campaign"
+                      ? "#93c5fd"
+                      : "#fca5a5";
                 return (
                   <div
                     key={e.id}
@@ -216,11 +295,23 @@ export default function SectionPage({
                       }}
                     >
                       <span style={{ fontSize: 15 }}>{e.icon}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--gold)" }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: "var(--gold)",
+                        }}
+                      >
                         {e.date}
                       </span>
                     </div>
-                    <div style={{ fontSize: 13, color: "var(--text-dark)", lineHeight: 1.5 }}>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "var(--text-dark)",
+                        lineHeight: 1.5,
+                      }}
+                    >
                       {e.text}
                     </div>
                   </div>
@@ -268,7 +359,13 @@ export default function SectionPage({
                         marginBottom: 4,
                       }}
                     >
-                      <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-dark)" }}>
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 14,
+                          color: "var(--text-dark)",
+                        }}
+                      >
                         {q.title}
                       </span>
                       <span
@@ -276,25 +373,47 @@ export default function SectionPage({
                           fontSize: 11,
                           padding: "2px 8px",
                           borderRadius: 3,
-                          background: claimed ? "#e5e7eb" : done ? "#f0fdf4" : "#fef9c3",
-                          color: claimed ? "#9ca3af" : done ? "#166534" : "#854d0e",
+                          background: claimed
+                            ? "#e5e7eb"
+                            : done
+                              ? "#f0fdf4"
+                              : "#fef9c3",
+                          color: claimed
+                            ? "#9ca3af"
+                            : done
+                              ? "#166534"
+                              : "#854d0e",
                           border: `1px solid ${claimed ? "#d1d5db" : done ? "#86efac" : "#fde047"}`,
                         }}
                       >
                         {claimed ? "Получено" : done ? "Готово!" : "В процессе"}
                       </span>
                     </div>
-                    <p style={{ fontSize: 12, color: "var(--text-medium)", marginBottom: 8 }}>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        color: "var(--text-medium)",
+                        marginBottom: 8,
+                      }}
+                    >
                       {q.desc}
                     </p>
                     <div style={{ marginBottom: 6 }}>
                       <div className="xp-bar">
                         <div
                           className="xp-fill"
-                          style={{ width: `${Math.min(100, (progress / q.target) * 100)}%` }}
+                          style={{
+                            width: `${Math.min(100, (progress / q.target) * 100)}%`,
+                          }}
                         />
                       </div>
-                      <div style={{ fontSize: 11, marginTop: 2, color: "var(--text-medium)" }}>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          marginTop: 2,
+                          color: "var(--text-medium)",
+                        }}
+                      >
                         {Math.min(progress, q.target)}/{q.target}
                       </div>
                     </div>
@@ -305,7 +424,9 @@ export default function SectionPage({
                         justifyContent: "space-between",
                       }}
                     >
-                      <div style={{ fontSize: 12, color: "var(--gold)" }}>🎁 {q.reward}</div>
+                      <div style={{ fontSize: 12, color: "var(--gold)" }}>
+                        🎁 {q.reward}
+                      </div>
                       {done && !claimed && (
                         <button
                           onClick={() => onClaimQuest(q)}
@@ -375,15 +496,28 @@ export default function SectionPage({
                   objectFit: "cover",
                 }}
               />
-              <div style={{ fontWeight: 700, fontSize: 16, marginTop: 8, color: "var(--text-dark)" }}>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: 16,
+                  marginTop: 8,
+                  color: "var(--text-dark)",
+                }}
+              >
                 {hero.name}
               </div>
-              <div style={{ fontSize: 12, color: "var(--gold)" }}>Уровень {hero.level}</div>
+              <div style={{ fontSize: 12, color: "var(--gold)" }}>
+                Уровень {hero.level}
+              </div>
             </div>
 
             <div
               className="game-panel-inner"
-              style={{ borderRadius: 4, padding: "12px 14px", marginBottom: 12 }}
+              style={{
+                borderRadius: 4,
+                padding: "12px 14px",
+                marginBottom: 12,
+              }}
             >
               <div
                 style={{
@@ -399,9 +533,17 @@ export default function SectionPage({
               >
                 Параметры
               </div>
-              <div style={{ fontSize: 12, color: "var(--text-medium)", marginBottom: 10 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "var(--text-medium)",
+                  marginBottom: 10,
+                }}
+              >
                 Серебро:{" "}
-                <strong style={{ color: "var(--text-dark)" }}>🪙 {silver}</strong>
+                <strong style={{ color: "var(--text-dark)" }}>
+                  🪙 {silver}
+                </strong>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {STAT_INFO.map((s) => {
@@ -413,9 +555,18 @@ export default function SectionPage({
                   return (
                     <div
                       key={s.key}
-                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "4px 0",
+                      }}
                     >
-                      <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>{s.icon}</span>
+                      <span
+                        style={{ fontSize: 18, width: 24, textAlign: "center" }}
+                      >
+                        {s.icon}
+                      </span>
                       <span
                         style={{
                           fontWeight: 700,
@@ -426,9 +577,13 @@ export default function SectionPage({
                       >
                         {s.label}:
                       </span>
-                      <span style={{ fontSize: 14, color: "var(--text-dark)" }}>{base}</span>
+                      <span style={{ fontSize: 14, color: "var(--text-dark)" }}>
+                        {base}
+                      </span>
                       {bonus > 0 && (
-                        <span style={{ fontSize: 14, color: "#15803d" }}>+{bonus}</span>
+                        <span style={{ fontSize: 14, color: "#15803d" }}>
+                          +{bonus}
+                        </span>
                       )}
                       <div style={{ marginLeft: "auto" }}>
                         <button
@@ -440,13 +595,28 @@ export default function SectionPage({
                             fontWeight: 600,
                             fontSize: 11,
                             border: "none",
-                            cursor: canAfford && level < 50 ? "pointer" : "not-allowed",
+                            cursor:
+                              canAfford && level < 50
+                                ? "pointer"
+                                : "not-allowed",
                             background:
-                              level >= 50 ? "#ccc" : canAfford ? "var(--crimson)" : "#e5e7eb",
+                              level >= 50
+                                ? "#ccc"
+                                : canAfford
+                                  ? "var(--crimson)"
+                                  : "#e5e7eb",
                             color:
-                              level >= 50 ? "#888" : canAfford ? "var(--parchment)" : "#9ca3af",
+                              level >= 50
+                                ? "#888"
+                                : canAfford
+                                  ? "var(--parchment)"
+                                  : "#9ca3af",
                           }}
-                          title={level >= 50 ? "Максимум" : `Стоимость: ${cost} серебра`}
+                          title={
+                            level >= 50
+                              ? "Максимум"
+                              : `Стоимость: ${cost} серебра`
+                          }
                         >
                           +1 ({cost}🪙)
                         </button>
@@ -465,26 +635,86 @@ export default function SectionPage({
                   gap: 4,
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
-                  <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>❤️</span>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-dark)", minWidth: 100 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "4px 0",
+                  }}
+                >
+                  <span
+                    style={{ fontSize: 18, width: 24, textAlign: "center" }}
+                  >
+                    ❤️
+                  </span>
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 14,
+                      color: "var(--text-dark)",
+                      minWidth: 100,
+                    }}
+                  >
                     Здоровье:
                   </span>
-                  <span style={{ fontSize: 14, color: "var(--text-dark)" }}>{currentHp}</span>
+                  <span style={{ fontSize: 14, color: "var(--text-dark)" }}>
+                    {currentHp}
+                  </span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
-                  <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>❤️</span>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-dark)", minWidth: 100 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "4px 0",
+                  }}
+                >
+                  <span
+                    style={{ fontSize: 18, width: 24, textAlign: "center" }}
+                  >
+                    ❤️
+                  </span>
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 14,
+                      color: "var(--text-dark)",
+                      minWidth: 100,
+                    }}
+                  >
                     Здор. Макс.:
                   </span>
-                  <span style={{ fontSize: 14, color: "var(--text-dark)" }}>{maxHp}</span>
+                  <span style={{ fontSize: 14, color: "var(--text-dark)" }}>
+                    {maxHp}
+                  </span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
-                  <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>❤️</span>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-dark)", minWidth: 100 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "4px 0",
+                  }}
+                >
+                  <span
+                    style={{ fontSize: 18, width: 24, textAlign: "center" }}
+                  >
+                    ❤️
+                  </span>
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 14,
+                      color: "var(--text-dark)",
+                      minWidth: 100,
+                    }}
+                  >
                     Восст.:
                   </span>
-                  <span style={{ fontSize: 14, color: "var(--text-dark)" }}>{regenPerHour} в час</span>
+                  <span style={{ fontSize: 14, color: "var(--text-dark)" }}>
+                    {regenPerHour} в час
+                  </span>
                 </div>
                 <div
                   style={{
@@ -493,12 +723,32 @@ export default function SectionPage({
                     marginTop: 4,
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
-                    <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>⭐</span>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-dark)", minWidth: 100 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "4px 0",
+                    }}
+                  >
+                    <span
+                      style={{ fontSize: 18, width: 24, textAlign: "center" }}
+                    >
+                      ⭐
+                    </span>
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        fontSize: 14,
+                        color: "var(--text-dark)",
+                        minWidth: 100,
+                      }}
+                    >
                       Слава:
                     </span>
-                    <span style={{ fontSize: 14, color: "var(--gold)" }}>{glory}</span>
+                    <span style={{ fontSize: 14, color: "var(--gold)" }}>
+                      {glory}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -532,10 +782,18 @@ export default function SectionPage({
             </h2>
             <div style={{ textAlign: "center", marginBottom: 16 }}>
               <div style={{ fontSize: 48, marginBottom: 8 }}>👤</div>
-              <div style={{ fontWeight: 700, fontSize: 16, color: "var(--text-dark)" }}>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: 16,
+                  color: "var(--text-dark)",
+                }}
+              >
                 {profileView.name}
               </div>
-              <div style={{ fontSize: 12, color: "var(--gold)" }}>Уровень {profileView.level}</div>
+              <div style={{ fontSize: 12, color: "var(--gold)" }}>
+                Уровень {profileView.level}
+              </div>
             </div>
             <div
               className="game-panel-inner"
@@ -563,15 +821,31 @@ export default function SectionPage({
               ].map((s) => (
                 <div
                   key={s.label}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "4px 0",
+                  }}
                 >
-                  <span style={{ fontSize: 16, width: 22, textAlign: "center" }}>{s.icon}</span>
                   <span
-                    style={{ fontWeight: 600, fontSize: 13, color: "var(--text-dark)", minWidth: 100 }}
+                    style={{ fontSize: 16, width: 22, textAlign: "center" }}
+                  >
+                    {s.icon}
+                  </span>
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 13,
+                      color: "var(--text-dark)",
+                      minWidth: 100,
+                    }}
                   >
                     {s.label}:
                   </span>
-                  <span style={{ fontSize: 13, color: "var(--text-dark)" }}>{s.val}</span>
+                  <span style={{ fontSize: 13, color: "var(--text-dark)" }}>
+                    {s.val}
+                  </span>
                 </div>
               ))}
             </div>
@@ -597,11 +871,20 @@ export default function SectionPage({
             {campaignEnd !== null ? (
               <div
                 className="game-panel-inner"
-                style={{ borderRadius: 4, padding: "20px 16px", textAlign: "center" }}
+                style={{
+                  borderRadius: 4,
+                  padding: "20px 16px",
+                  textAlign: "center",
+                }}
               >
                 <div style={{ fontSize: 48, marginBottom: 8 }}>🏕️</div>
                 <div
-                  style={{ fontWeight: 700, fontSize: 16, color: "var(--text-dark)", marginBottom: 4 }}
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 16,
+                    color: "var(--text-dark)",
+                    marginBottom: 4,
+                  }}
                 >
                   Герой в походе
                 </div>
@@ -630,9 +913,12 @@ export default function SectionPage({
                     lineHeight: 1.6,
                   }}
                 >
-                  Отправь героя в поход. Чем дольше путешествие — тем больше серебра он принесёт.
+                  Отправь героя в поход. Чем дольше путешествие — тем больше
+                  серебра он принесёт.
                 </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                >
                   {CAMPAIGN_OPTIONS.map((opt) => (
                     <button
                       key={opt.minutes}
@@ -651,10 +937,22 @@ export default function SectionPage({
                       }}
                     >
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-dark)" }}>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: 14,
+                            color: "var(--text-dark)",
+                          }}
+                        >
                           🗺️ {opt.label}
                         </div>
-                        <div style={{ fontSize: 11, color: "var(--text-medium)", marginTop: 2 }}>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "var(--text-medium)",
+                            marginTop: 2,
+                          }}
+                        >
                           Награда: {opt.silverMin}–{opt.silverMax} серебра
                         </div>
                       </div>
@@ -692,14 +990,36 @@ export default function SectionPage({
             >
               🏆 Лучшие герои
             </h2>
-            <div className="game-panel-inner" style={{ borderRadius: 4, overflow: "hidden" }}>
-              <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+            <div
+              className="game-panel-inner"
+              style={{ borderRadius: 4, overflow: "hidden" }}
+            >
+              <table
+                style={{
+                  width: "100%",
+                  fontSize: 13,
+                  borderCollapse: "collapse",
+                }}
+              >
                 <thead>
-                  <tr style={{ background: "var(--crimson)", color: "var(--parchment)" }}>
-                    <th style={{ padding: "8px 12px", textAlign: "left" }}>#</th>
-                    <th style={{ padding: "8px 12px", textAlign: "left" }}>Герой</th>
-                    <th style={{ padding: "8px 12px", textAlign: "center" }}>Ур.</th>
-                    <th style={{ padding: "8px 12px", textAlign: "right" }}>Сила</th>
+                  <tr
+                    style={{
+                      background: "var(--crimson)",
+                      color: "var(--parchment)",
+                    }}
+                  >
+                    <th style={{ padding: "8px 12px", textAlign: "left" }}>
+                      #
+                    </th>
+                    <th style={{ padding: "8px 12px", textAlign: "left" }}>
+                      Герой
+                    </th>
+                    <th style={{ padding: "8px 12px", textAlign: "center" }}>
+                      Ур.
+                    </th>
+                    <th style={{ padding: "8px 12px", textAlign: "right" }}>
+                      Сила
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -715,10 +1035,17 @@ export default function SectionPage({
                         style={{
                           padding: "8px 12px",
                           fontWeight: 700,
-                          color: h.rank <= 3 ? "var(--gold)" : "var(--text-medium)",
+                          color:
+                            h.rank <= 3 ? "var(--gold)" : "var(--text-medium)",
                         }}
                       >
-                        {h.rank === 1 ? "🥇" : h.rank === 2 ? "🥈" : h.rank === 3 ? "🥉" : h.rank}
+                        {h.rank === 1
+                          ? "🥇"
+                          : h.rank === 2
+                            ? "🥈"
+                            : h.rank === 3
+                              ? "🥉"
+                              : h.rank}
                       </td>
                       <td style={{ padding: "8px 12px" }}>
                         <div
@@ -732,7 +1059,11 @@ export default function SectionPage({
                         >
                           {h.name}
                         </div>
-                        <div style={{ fontSize: 11, color: "var(--text-medium)" }}>{h.guild}</div>
+                        <div
+                          style={{ fontSize: 11, color: "var(--text-medium)" }}
+                        >
+                          {h.guild}
+                        </div>
                       </td>
                       <td
                         style={{
@@ -776,14 +1107,50 @@ export default function SectionPage({
             >
               🏘️ Поселок
             </h2>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 10,
+              }}
+            >
               {[
-                { name: "Кузница", icon: "🔨", desc: "Улучши оружие и броню", level: 2 },
-                { name: "Таверна", icon: "🍺", desc: "Отдохни и найди задания", level: 1 },
-                { name: "Храм", icon: "⛪", desc: "Исцелись и получи благословение", level: 1 },
-                { name: "Рынок", icon: "🛒", desc: "Купи и продай предметы", level: 3 },
-                { name: "Казарма", icon: "🗡️", desc: "Найми воинов в отряд", level: 2 },
-                { name: "Академия", icon: "📚", desc: "Изучи новые умения", level: 1 },
+                {
+                  name: "Кузница",
+                  icon: "🔨",
+                  desc: "Улучши оружие и броню",
+                  level: 2,
+                },
+                {
+                  name: "Таверна",
+                  icon: "🍺",
+                  desc: "Отдохни и найди задания",
+                  level: 1,
+                },
+                {
+                  name: "Храм",
+                  icon: "⛪",
+                  desc: "Исцелись и получи благословение",
+                  level: 1,
+                },
+                {
+                  name: "Рынок",
+                  icon: "🛒",
+                  desc: "Купи и продай предметы",
+                  level: 3,
+                },
+                {
+                  name: "Казарма",
+                  icon: "🗡️",
+                  desc: "Найми воинов в отряд",
+                  level: 2,
+                },
+                {
+                  name: "Академия",
+                  icon: "📚",
+                  desc: "Изучи новые умения",
+                  level: 1,
+                },
               ].map((b) => (
                 <div
                   key={b.name}
@@ -796,10 +1163,22 @@ export default function SectionPage({
                   }}
                 >
                   <div style={{ fontSize: 32, marginBottom: 4 }}>{b.icon}</div>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-dark)" }}>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 13,
+                      color: "var(--text-dark)",
+                    }}
+                  >
                     {b.name}
                   </div>
-                  <div style={{ fontSize: 10, color: "var(--text-medium)", marginTop: 2 }}>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: "var(--text-medium)",
+                      marginTop: 2,
+                    }}
+                  >
                     {b.desc}
                   </div>
                   <div
@@ -825,7 +1204,9 @@ export default function SectionPage({
             className="animate-fade-in"
             style={{ textAlign: "center", padding: "32px 0" }}
           >
-            <div style={{ fontSize: 52, marginBottom: 16 }}>{section?.icon}</div>
+            <div style={{ fontSize: 52, marginBottom: 16 }}>
+              {section?.icon}
+            </div>
             <h2
               style={{
                 fontFamily: "'Cormorant Garamond', serif",
@@ -837,7 +1218,9 @@ export default function SectionPage({
             >
               {section?.label}
             </h2>
-            <p style={{ fontSize: 13, color: "var(--text-medium)" }}>Раздел в разработке</p>
+            <p style={{ fontSize: 13, color: "var(--text-medium)" }}>
+              Раздел в разработке
+            </p>
           </div>
         );
       }
