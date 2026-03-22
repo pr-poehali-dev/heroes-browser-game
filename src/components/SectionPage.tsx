@@ -20,14 +20,6 @@ const SECTIONS = [
   { id: "top", label: "Лучшие", icon: "🏆" },
 ];
 
-const INITIAL_STATS: HeroStats = {
-  strength: 5,
-  defense: 5,
-  agility: 5,
-  mastery: 5,
-  vitality: 5,
-};
-
 const STAT_COST = (level: number) => level * 50;
 
 const STAT_INFO = [
@@ -547,8 +539,6 @@ export default function SectionPage({
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {STAT_INFO.map((s) => {
-                  const base = INITIAL_STATS[s.key];
-                  const bonus = stats[s.key] - base;
                   const level = stats[s.key];
                   const cost = STAT_COST(level);
                   const canAfford = silver >= cost;
@@ -578,45 +568,23 @@ export default function SectionPage({
                         {s.label}:
                       </span>
                       <span style={{ fontSize: 14, color: "var(--text-dark)" }}>
-                        {base}
+                        {level}
                       </span>
-                      {bonus > 0 && (
-                        <span style={{ fontSize: 14, color: "#15803d" }}>
-                          +{bonus}
-                        </span>
-                      )}
                       <div style={{ marginLeft: "auto" }}>
                         <button
                           onClick={() => onUpgradeStat(s.key)}
-                          disabled={!canAfford || level >= 50}
+                          disabled={!canAfford}
                           style={{
                             padding: "3px 8px",
                             borderRadius: 3,
                             fontWeight: 600,
                             fontSize: 11,
                             border: "none",
-                            cursor:
-                              canAfford && level < 50
-                                ? "pointer"
-                                : "not-allowed",
-                            background:
-                              level >= 50
-                                ? "#ccc"
-                                : canAfford
-                                  ? "var(--crimson)"
-                                  : "#e5e7eb",
-                            color:
-                              level >= 50
-                                ? "#888"
-                                : canAfford
-                                  ? "var(--parchment)"
-                                  : "#9ca3af",
+                            cursor: canAfford ? "pointer" : "not-allowed",
+                            background: canAfford ? "var(--crimson)" : "#e5e7eb",
+                            color: canAfford ? "var(--parchment)" : "#9ca3af",
                           }}
-                          title={
-                            level >= 50
-                              ? "Максимум"
-                              : `Стоимость: ${cost} серебра`
-                          }
+                          title={`Стоимость: ${cost} серебра`}
                         >
                           +1 ({cost}🪙)
                         </button>
