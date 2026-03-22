@@ -41,7 +41,7 @@ export default function MainPage({
       >
         <img
           src={BANNER_URL}
-          alt="Герои"
+          alt="Викинги"
           style={{
             width: "100%",
             height: "100%",
@@ -88,7 +88,7 @@ export default function MainPage({
               lineHeight: 1.6,
             }}
           >
-            Герой <strong>{hero.name}</strong>, уровень{" "}
+            Викинг <strong>{hero.name}</strong>, уровень{" "}
             <strong>{hero.level}</strong>.
           </p>
         </div>
@@ -103,15 +103,11 @@ export default function MainPage({
           >
             {SECTIONS.map((s) => {
               const blocked =
-                isCampaignActive &&
-                s.id !== "campaign" &&
-                s.id !== "diary";
+                isCampaignActive && s.id !== "campaign" && s.id !== "diary";
               return (
                 <button
                   key={s.id}
-                  onClick={() =>
-                    !blocked && onOpenSection(s.id as SectionId)
-                  }
+                  onClick={() => !blocked && onOpenSection(s.id as SectionId)}
                   style={{
                     display: "flex",
                     flexDirection: "column",
