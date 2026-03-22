@@ -104,7 +104,7 @@ def handler(event: dict, context) -> dict:
         hp = int(h.get("hp", 100))
         max_hp = int(h.get("max_hp", 100))
         gold = int(h.get("gold", 250))
-        silver = int(h.get("silver", 480))
+        silver = int(h.get("silver", 49000))
         gems = int(h.get("gems", 5))
         glory = int(h.get("glory", 0))
         attack = int(h.get("attack", 12))
