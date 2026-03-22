@@ -4,6 +4,7 @@ import GameHeader from "@/components/GameHeader";
 import MainPage from "@/components/MainPage";
 import SectionPage from "@/components/SectionPage";
 import GameFooter from "@/components/GameFooter";
+import AuthScreen from "@/components/AuthScreen";
 
 const MAX_BATTLES = 6;
 const REGEN_MS = 5 * 60 * 1000;
@@ -100,16 +101,17 @@ export type SectionId =
   | "hero"
   | "profile";
 
-function getUserId(): string {
-  let uid = localStorage.getItem("heroes_user_id");
-  if (!uid) {
-    uid = "u_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
-    localStorage.setItem("heroes_user_id", uid);
-  }
-  return uid;
+function getSavedSession(): { userId: string; username: string } | null {
+  const userId = localStorage.getItem("heroes_user_id");
+  const username = localStorage.getItem("heroes_username");
+  if (userId && username) return { userId, username };
+  return null;
 }
 
 export default function Index() {
+  const savedSession = getSavedSession();
+  const [session, setSession] = useState<{ userId: string; username: string } | null>(savedSession);
+
   const [activeSection, setActiveSection] = useState<SectionId>("main");
   const [hero] = useState(HERO_BASE);
   const [silver, setSilver] = useState(480);
@@ -157,7 +159,8 @@ export default function Index() {
 
   // Load hero from DB on first render
   useEffect(() => {
-    const uid = getUserId();
+    if (!session) return;
+    const uid = session.userId;
     fetch(HERO_SAVE_URL, { headers: { "X-User-Id": uid } })
       .then((r) => r.json())
       .then((data) => {
@@ -194,15 +197,15 @@ export default function Index() {
       .catch(() => {
         loadedRef.current = true;
       });
-  }, []);
+  }, [session]);
 
   // Autosave with debounce
   const triggerSave = useCallback((payload: object) => {
-    if (!loadedRef.current) return;
+    if (!loadedRef.current || !session) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setSaveStatus("saving");
     saveTimerRef.current = setTimeout(() => {
-      const uid = getUserId();
+      const uid = session.userId;
       fetch(HERO_SAVE_URL, {
         method: "POST",
         headers: { "X-User-Id": uid, "Content-Type": "application/json" },
@@ -451,15 +454,25 @@ export default function Index() {
     setActiveSection("profile");
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("heroes_user_id");
+    localStorage.removeItem("heroes_username");
+    setSession(null);
+  };
+
   const isOnSection = activeSection !== "main";
   const isCampaignActive = campaignEnd !== null;
 
   void xp;
 
+  if (!session) {
+    return <AuthScreen onAuth={(userId, username) => setSession({ userId, username })} />;
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: "var(--parchment)" }}>
       <GameHeader
-        hero={hero}
+        hero={{ ...hero, name: session.username }}
         currentHp={currentHp}
         silver={silver}
         battles={battles}
@@ -469,12 +482,13 @@ export default function Index() {
         campaignNotice={campaignNotice}
         onOpenSection={openSection}
         saveStatus={saveStatus}
+        onLogout={handleLogout}
       />
 
       <div style={{ maxWidth: 520, margin: "0 auto" }}>
         {activeSection === "main" && (
           <MainPage
-            hero={hero}
+            hero={{ ...hero, name: session.username }}
             isCampaignActive={isCampaignActive}
             onOpenSection={openSection}
           />

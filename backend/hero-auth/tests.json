@@ -1,0 +1,44 @@
+{
+  "tests": [
+    {
+      "name": "Register new user",
+      "method": "POST",
+      "path": "/",
+      "headers": { "Content-Type": "application/json" },
+      "body": { "action": "register", "username": "TestHero99", "password": "pass123" },
+      "expectedStatus": 200,
+      "expectedBody": { "success": true },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Register duplicate user",
+      "method": "POST",
+      "path": "/",
+      "headers": { "Content-Type": "application/json" },
+      "body": { "action": "register", "username": "TestHero99", "password": "pass123" },
+      "expectedStatus": 409,
+      "expectedBody": { "error": "Этот ник уже занят" },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Login success",
+      "method": "POST",
+      "path": "/",
+      "headers": { "Content-Type": "application/json" },
+      "body": { "action": "login", "username": "TestHero99", "password": "pass123" },
+      "expectedStatus": 200,
+      "expectedBody": { "success": true },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Login wrong password",
+      "method": "POST",
+      "path": "/",
+      "headers": { "Content-Type": "application/json" },
+      "body": { "action": "login", "username": "TestHero99", "password": "wrong" },
+      "expectedStatus": 401,
+      "expectedBody": { "error": "Неверный ник или пароль" },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

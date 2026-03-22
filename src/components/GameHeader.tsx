@@ -30,6 +30,7 @@ interface GameHeaderProps {
   campaignNotice: string | null;
   onOpenSection: (id: SectionId) => void;
   saveStatus?: "idle" | "saving" | "saved";
+  onLogout?: () => void;
 }
 
 export default function GameHeader({
@@ -43,6 +44,7 @@ export default function GameHeader({
   campaignNotice,
   onOpenSection,
   saveStatus = "idle",
+  onLogout,
 }: GameHeaderProps) {
   return (
     <header className="game-header">
@@ -135,6 +137,17 @@ export default function GameHeader({
             <span style={{ fontWeight: 600 }}>
               {campaignTimer !== null ? formatTimer(campaignTimer) : "..."}
             </span>
+          </div>
+        )}
+        {onLogout && (
+          <div
+            className="stat-badge"
+            onClick={onLogout}
+            style={{ cursor: "pointer", opacity: 0.7 }}
+            title="Выйти"
+          >
+            <span style={{ fontSize: 12 }}>🚪</span>
+            <span style={{ fontSize: 11 }}>Выйти</span>
           </div>
         )}
       </div>
