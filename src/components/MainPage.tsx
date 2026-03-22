@@ -59,9 +59,9 @@ export default function MainPage({
         />
       </div>
 
-      <div className="game-panel py-0">
+      <div className="game-panel">
         <div
-          className="animate-fade-in px-1 py-0 my-0 mx-0 rounded-sm bg-lime-500"
+          className="animate-fade-in"
           style={{
             padding: "14px 16px",
             borderBottom: "1px solid var(--parchment-border)",
@@ -77,7 +77,9 @@ export default function MainPage({
               marginBottom: 6,
               color: "var(--text-dark)",
             }}
-          >Добро пожаловать!</h2>
+          >
+            Добро пожаловать!
+          </h2>
           <p
             style={{
               textAlign: "center",
@@ -137,7 +139,7 @@ export default function MainPage({
         </div>
 
         <div
-          className="bottom-nav py-0.5"
+          className="bottom-nav"
           style={{
             padding: "8px 16px",
             display: "flex",

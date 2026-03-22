@@ -52,7 +52,7 @@ export default function GameHeader({
             {saveStatus === "saving" ? "💾 сохранение..." : "✓ сохранено"}
           </div>
         )}
-        <h1 className="game-title text-[1.38rem] font-thin" style={{ fontSize: 22, letterSpacing: "0.3em" }}>⚔В И К И Н Г И⚔</h1>
+        <h1 className="game-title" style={{ fontSize: 22, letterSpacing: "0.3em" }}>⚜ В И К И Н Г И ⚜</h1>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "8px 12px", justifyContent: "center" }}>
