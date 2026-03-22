@@ -17,7 +17,7 @@ export default function GameFooter() {
   return (
     <>
       <footer
-        className="game-footer"
+        className="game-footer py-[61px]"
         style={{ textAlign: "center", padding: "12px 16px" }}
       >
         <div

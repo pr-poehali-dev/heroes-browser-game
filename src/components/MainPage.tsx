@@ -59,7 +59,7 @@ export default function MainPage({
         />
       </div>
 
-      <div className="game-panel">
+      <div className="game-panel py-0">
         <div
           className="animate-fade-in px-1 py-0 my-0 mx-0 rounded-sm bg-lime-500"
           style={{
@@ -77,9 +77,7 @@ export default function MainPage({
               marginBottom: 6,
               color: "var(--text-dark)",
             }}
-          >
-            Добро пожаловать!
-          </h2>
+          >Добро пожаловать!</h2>
           <p
             style={{
               textAlign: "center",
