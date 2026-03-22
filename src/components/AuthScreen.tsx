@@ -94,7 +94,7 @@ export default function AuthScreen({ onAuth }: AuthScreenProps) {
     <div style={{ minHeight: "100vh", background: "var(--parchment)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 16px" }}>
       <div style={{ width: "100%", maxWidth: 360 }}>
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <h1 className="game-title" style={{ fontSize: 28, letterSpacing: "0.3em", marginBottom: 8 }}>⚜ ГЕРОИ ⚜</h1>
+          <h1 className="game-title" style={{ fontSize: 28, letterSpacing: "0.3em", marginBottom: 8 }}>⚔Викинги⚔</h1>
           <p style={{ fontSize: 13, color: "var(--text-medium)" }}>Браузерная ролевая игра</p>
         </div>
 
