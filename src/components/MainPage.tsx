@@ -59,9 +59,9 @@ export default function MainPage({
         />
       </div>
 
-      <div className="game-panel">
+      <div className="game-panel rounded-lg">
         <div
-          className="animate-fade-in"
+          className="animate-fade-in rounded-sm py-0"
           style={{
             padding: "14px 16px",
             borderBottom: "1px solid var(--parchment-border)",
@@ -139,7 +139,7 @@ export default function MainPage({
         </div>
 
         <div
-          className="bottom-nav"
+          className="bottom-nav rounded-[0.25rem]"
           style={{
             padding: "8px 16px",
             display: "flex",

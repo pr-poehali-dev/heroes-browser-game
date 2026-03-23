@@ -57,31 +57,31 @@ export default function GameHeader({
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "8px 12px", justifyContent: "center" }}>
         {/* Аватарка + имя — кликабельна */}
-        <div className="stat-badge" onClick={() => onOpenSection("hero")} style={{ cursor: "pointer", gap: 5 }}>
+        <div className="stat-badge rounded-[0.25rem]" onClick={() => onOpenSection("hero")} style={{ cursor: "pointer", gap: 5 }}>
           <span style={{ fontSize: 18, lineHeight: 1 }}>{getAvatarEmoji(avatarId)}</span>
           <span style={{ fontWeight: 600 }}>{hero.name}</span>
         </div>
-        <div className="stat-badge">
+        <div className="stat-badge rounded-full">
           <span>⭐</span>
           <span>{hero.level} ур.</span>
         </div>
-        <div className="stat-badge" title={`${currentHp}/${maxHp} HP`}>
+        <div className="stat-badge rounded-full" title={`${currentHp}/${maxHp} HP`}>
           <span>❤️</span>
           <span>{currentHp}/{maxHp}</span>
         </div>
-        <div className="stat-badge">
+        <div className="stat-badge rounded-3xl">
           <span style={{ fontSize: 12 }}>🥈</span>
           <span>{silver}</span>
         </div>
-        <div className="stat-badge">
+        <div className="stat-badge rounded-3xl">
           <span style={{ fontSize: 12 }}></span>
           <span>{hero.gold}</span>
         </div>
-        <div className="stat-badge">
+        <div className="stat-badge rounded-full">
           <span>💎</span>
           <span>{hero.gems}</span>
         </div>
-        <div className="stat-badge" style={{ gap: 5, alignItems: "center" }}>
+        <div className="stat-badge rounded-full" style={{ gap: 5, alignItems: "center" }}>
           <span>⚔️</span>
           <span style={{ fontWeight: 600 }}>{battles}/{MAX_BATTLES}</span>
           {regenTimer !== null && battles < MAX_BATTLES && (
@@ -95,7 +95,7 @@ export default function GameHeader({
           </div>
         )}
         {onLogout && (
-          <div className="stat-badge" onClick={onLogout} style={{ cursor: "pointer", opacity: 0.7 }} title="Выйти">
+          <div className="stat-badge rounded-full" onClick={onLogout} style={{ cursor: "pointer", opacity: 0.7 }} title="Выйти">
             <span style={{ fontSize: 12 }}>🚪</span>
             <span style={{ fontSize: 11 }}>Выйти</span>
           </div>
