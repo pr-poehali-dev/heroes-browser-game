@@ -1,3 +1,11 @@
+/**
+ * GameFooter.tsx — Подвал игры
+ *
+ * За что отвечает:
+ * - Ссылки: Правила, Помощь, Контакты
+ * - Секретный вход в админ-панель (5 кликов по копирайту)
+ * - Отображает компонент AdminPanel при активации
+ */
 import { useState } from "react";
 import AdminPanel from "@/components/AdminPanel";
 

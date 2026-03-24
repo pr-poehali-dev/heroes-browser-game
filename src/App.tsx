@@ -1,4 +1,11 @@
-
+/**
+ * App.tsx — Корневой компонент приложения
+ *
+ * Что здесь происходит:
+ * - Подключает роутинг (переходы между страницами)
+ * - Оборачивает приложение в провайдеры (кеширование данных, тултипы, уведомления)
+ * - Определяет маршруты: "/" — главная (игра), "*" — страница 404
+ */
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";

@@ -1,3 +1,12 @@
+/*
+ * index.css — Глобальные стили игры «Варвары»
+ *
+ * За что отвечает:
+ * - CSS-переменные: цвета игры (--crimson, --gold, --parchment), полосы статов (HP, мана, XP)
+ * - Игровые классы: .game-header, .game-panel, .stat-bar, .stat-badge, .nav-link, .bottom-nav, .game-footer
+ * - Анимации: fade-in, content-stagger (8 уровней задержки)
+ * - Стили компонентов shadcn/ui (через CSS-переменные)
+ */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
