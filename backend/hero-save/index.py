@@ -73,7 +73,7 @@ def handler(event: dict, context) -> dict:
                    location, quest_progress, quest_claimed, total_silver_earned,
                    duel_wins, duel_losses, campaign_count, campaign_minutes_total,
                    campaign_minutes, campaign_used_minutes_today, campaign_day,
-                   avatar, pets, mine_end_at, mine_depth
+                   avatar, pets, mine_end_at, mine_depth, diary
             FROM {SCHEMA}.heroes
             WHERE user_id = '{esc(user_id)}'
         """
@@ -95,7 +95,7 @@ def handler(event: dict, context) -> dict:
             "location", "quest_progress", "quest_claimed", "total_silver_earned",
             "duel_wins", "duel_losses", "campaign_count", "campaign_minutes_total",
             "campaign_minutes", "campaign_used_minutes_today", "campaign_day",
-            "avatar", "pets", "mine_end_at", "mine_depth",
+            "avatar", "pets", "mine_end_at", "mine_depth", "diary",
         ]
         data = dict(zip(keys, rows[0]))
 
@@ -151,6 +151,10 @@ def handler(event: dict, context) -> dict:
         pets = esc(json.dumps(h.get("pets", [])))
         mine_ea = ts_lit(h.get("mine_end_at"))
         mine_depth = int(h.get("mine_depth", 0))
+        diary_raw = h.get("diary", [])
+        if not isinstance(diary_raw, list):
+            diary_raw = []
+        diary = esc(json.dumps(diary_raw[:20]))
         uid = esc(user_id)
 
         sql = f"""
@@ -162,7 +166,7 @@ def handler(event: dict, context) -> dict:
                 location, quest_progress, quest_claimed, total_silver_earned,
                 duel_wins, duel_losses, campaign_count, campaign_minutes_total,
                 campaign_minutes, campaign_used_minutes_today, campaign_day,
-                avatar, pets, mine_end_at, mine_depth, updated_at
+                avatar, pets, mine_end_at, mine_depth, diary, updated_at
             ) VALUES (
                 '{uid}', '{name}', {level}, {xp}, {xp_next}, {hp}, {max_hp},
                 {gold}, {silver}, {gems}, {glory},
@@ -173,7 +177,7 @@ def handler(event: dict, context) -> dict:
                 {total_silver_earned},
                 {duel_wins}, {duel_losses}, {campaign_count}, {campaign_minutes_total},
                 {campaign_minutes}, {campaign_used_minutes_today}, '{campaign_day}',
-                '{avatar}', '{pets}'::jsonb, {mine_ea}, {mine_depth}, NOW()
+                '{avatar}', '{pets}'::jsonb, {mine_ea}, {mine_depth}, '{diary}'::jsonb, NOW()
             )
             ON CONFLICT (user_id) DO UPDATE SET
                 name = EXCLUDED.name, level = EXCLUDED.level, xp = EXCLUDED.xp,
@@ -196,7 +200,7 @@ def handler(event: dict, context) -> dict:
                 campaign_used_minutes_today = EXCLUDED.campaign_used_minutes_today,
                 campaign_day = EXCLUDED.campaign_day, avatar = EXCLUDED.avatar,
                 pets = EXCLUDED.pets, mine_end_at = EXCLUDED.mine_end_at,
-                mine_depth = EXCLUDED.mine_depth, updated_at = NOW()
+                mine_depth = EXCLUDED.mine_depth, diary = EXCLUDED.diary, updated_at = NOW()
         """
         conn.run(sql)
         conn.close()

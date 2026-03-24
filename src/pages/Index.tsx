@@ -26,6 +26,12 @@ import AuthScreen from "@/components/AuthScreen";
 
 const MAX_BATTLES = 6;
 const REGEN_MS = 5 * 60 * 1000;
+const MAX_DIARY_ENTRIES = 20;
+
+const MONTHS_RU = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+function formatDiaryDate(d: Date): string {
+  return `${d.getDate()} ${MONTHS_RU[d.getMonth()]}, ${d.getHours()}:${d.getMinutes().toString().padStart(2, "0")}`;
+}
 const HERO_SAVE_URL = "https://functions.poehali.dev/a540a07e-c67f-47e9-bb14-59ba436a93d8";
 
 export interface DiaryEntry {
@@ -221,6 +227,10 @@ export default function Index() {
         if (h.quest_progress && typeof h.quest_progress === "object") setQuestProgress(h.quest_progress);
         if (h.quest_claimed && typeof h.quest_claimed === "object") setQuestClaimed(h.quest_claimed);
         if (h.pets && Array.isArray(h.pets)) setPets(h.pets);
+        if (h.diary && Array.isArray(h.diary)) {
+          setDiary(h.diary.slice(0, MAX_DIARY_ENTRIES));
+          diaryIdRef.current = h.diary.length > 0 ? Math.max(...h.diary.map((d: DiaryEntry) => d.id)) + 1 : 10;
+        }
         if (h.campaign_used_minutes_today) {
           // Сбрасываем если прошли сутки
           const lastDay = h.campaign_day ?? "";
@@ -326,9 +336,10 @@ export default function Index() {
       pets,
       mine_end_at: mineEnd ? new Date(mineEnd).toISOString() : null,
       mine_depth: mineDepth,
+      diary: diary.slice(0, MAX_DIARY_ENTRIES),
       ...overrides,
     }),
-    [hero, xp, currentHp, maxHp, silver, glory, stats, battles, campaignEnd, campaignReward, campaignMinutes, campaignUsedMinutesToday, campaignCount, campaignMinutesTotal, questProgress, questClaimed, totalSilverEarned, duelWins, duelLosses, avatarId, pets, mineEnd, mineDepth],
+    [hero, xp, currentHp, maxHp, silver, glory, stats, battles, campaignEnd, campaignReward, campaignMinutes, campaignUsedMinutesToday, campaignCount, campaignMinutesTotal, questProgress, questClaimed, totalSilverEarned, duelWins, duelLosses, avatarId, pets, mineEnd, mineDepth, diary],
   );
 
   // Поход таймер
@@ -340,40 +351,31 @@ export default function Index() {
         setCampaignTimer(null);
         const reward = campaignReward;
         const mins = campaignMinutes;
-        setSilver((s) => {
-          const newSilver = s + reward;
-          setTotalSilverEarned((t) => {
-            const newTotal = t + reward;
-            setCampaignCount((c) => {
-              const newCount = c + 1;
-              setCampaignMinutesTotal((m) => {
-                const newMins = m + mins;
-                triggerSave(buildPayload({
-                  silver: newSilver,
-                  campaign_end_at: null,
-                  campaign_reward: 0,
-                  total_silver_earned: newTotal,
-                  campaign_count: newCount,
-                  campaign_minutes_total: newMins,
-                }));
-                return newMins;
-              });
-              return newCount;
-            });
-            return newTotal;
-          });
-          return newSilver;
-        });
         const now = new Date();
-        const dateStr = `${now.getDate()} марта, ${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`;
         const entry: DiaryEntry = {
           id: ++diaryIdRef.current,
-          date: dateStr,
+          date: formatDiaryDate(now),
           icon: "🗺️",
           text: `Поход завершён! Получено ${reward} серебра.`,
           type: "campaign",
         };
-        setDiary((prev) => [entry, ...prev]);
+        setSilver((s) => s + reward);
+        setTotalSilverEarned((t) => t + reward);
+        setCampaignCount((c) => c + 1);
+        setCampaignMinutesTotal((m) => m + mins);
+        setDiary((prev) => {
+          const newDiary = [entry, ...prev].slice(0, MAX_DIARY_ENTRIES);
+          triggerSave(buildPayload({
+            silver: silver + reward,
+            campaign_end_at: null,
+            campaign_reward: 0,
+            total_silver_earned: totalSilverEarned + reward,
+            campaign_count: campaignCount + 1,
+            campaign_minutes_total: campaignMinutesTotal + mins,
+            diary: newDiary,
+          }));
+          return newDiary;
+        });
         setCampaignNotice(`Поход завершён! +${reward} серебра`);
         setCampaignEnd(null);
         setCampaignReward(0);
@@ -385,7 +387,7 @@ export default function Index() {
     const interval = setInterval(tick, 1000);
     tick();
     return () => clearInterval(interval);
-  }, [campaignEnd, campaignReward, campaignMinutes, triggerSave, buildPayload]);
+  }, [campaignEnd, campaignReward, campaignMinutes, triggerSave, buildPayload, silver, totalSilverEarned, campaignCount, campaignMinutesTotal]);
 
   // Шахта таймер
   useEffect(() => {
@@ -454,7 +456,7 @@ export default function Index() {
 
   const addDiaryEntry = useCallback((entry: Omit<DiaryEntry, "id">) => {
     diaryIdRef.current += 1;
-    setDiary((prev) => [{ ...entry, id: diaryIdRef.current }, ...prev]);
+    setDiary((prev) => [{ ...entry, id: diaryIdRef.current }, ...prev].slice(0, MAX_DIARY_ENTRIES));
   }, []);
 
   const onDuelEnd = useCallback(
@@ -465,14 +467,17 @@ export default function Index() {
       if (reward.silver > 0) setTotalSilverEarned((t) => t + reward.silver);
 
       const now = new Date();
-      const dateStr = `${now.getDate()} марта, ${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`;
+      const dateStr = formatDiaryDate(now);
       if (result === "victory") {
         setDuelWins((w) => w + 1);
         const parts: string[] = [];
         if (reward.glory > 0) parts.push(`+${reward.glory} ⭐ славы`);
         if (reward.xp > 0) parts.push(`+${reward.xp} опыта`);
         if (reward.silver > 0) parts.push(`+${reward.silver} серебра`);
-        addDiaryEntry({ date: dateStr, icon: "🏆", text: `Победа над ${enemyName}! ${parts.join(", ")}.`, type: "duel_win" });
+        const newEntry: DiaryEntry = { id: diaryIdRef.current + 1, date: dateStr, icon: "🏆", text: `Победа над ${enemyName}! ${parts.join(", ")}.`, type: "duel_win" };
+        diaryIdRef.current += 1;
+        const newDiary = [newEntry, ...diary].slice(0, MAX_DIARY_ENTRIES);
+        setDiary(newDiary);
         setQuestProgress((prev) => {
           const next = { ...prev, 1: (prev[1] || 0) + 1 };
           triggerSave(buildPayload({
@@ -482,16 +487,20 @@ export default function Index() {
             total_silver_earned: totalSilverEarned + reward.silver,
             quest_progress: next,
             duel_wins: duelWins + 1,
+            diary: newDiary,
           }));
           return next;
         });
       } else {
         setDuelLosses((l) => l + 1);
-        addDiaryEntry({ date: dateStr, icon: "💀", text: `Поражение от ${enemyName} в дуэли.`, type: "duel_lose" });
-        triggerSave(buildPayload({ duel_losses: duelLosses + 1 }));
+        const newEntry: DiaryEntry = { id: diaryIdRef.current + 1, date: dateStr, icon: "💀", text: `Поражение от ${enemyName} в дуэли.`, type: "duel_lose" };
+        diaryIdRef.current += 1;
+        const newDiary = [newEntry, ...diary].slice(0, MAX_DIARY_ENTRIES);
+        setDiary(newDiary);
+        triggerSave(buildPayload({ duel_losses: duelLosses + 1, diary: newDiary }));
       }
     },
-    [addDiaryEntry, triggerSave, buildPayload, silver, glory, xp, totalSilverEarned, duelWins, duelLosses],
+    [triggerSave, buildPayload, silver, glory, xp, totalSilverEarned, duelWins, duelLosses, diary],
   );
 
   const upgradeStat = (key: keyof HeroStats) => {

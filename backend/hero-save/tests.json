@@ -56,7 +56,8 @@
           "avatar": "m1",
           "pets": [],
           "mine_end_at": null,
-          "mine_depth": 0
+          "mine_depth": 0,
+          "diary": [{"id": 1, "date": "24 марта, 12:00", "icon": "🏆", "text": "Тестовая запись", "type": "system"}]
         }
       },
       "expectedStatus": 200,
