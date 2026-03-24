@@ -5,7 +5,7 @@ import { DiaryEntry, HeroStats, SectionId } from "@/pages/Index";
 
 // ── Аватарки ──────────────────────────────────────────────────────────────────
 export const MALE_AVATARS = [
-  { id: "m1", <img src="" alt="">},
+  { id: "m1", <img src="https://cdn.poehali.dev/projects/e03d01dd-c207-488c-aa14-9e40184b6c24/bucket/ff6c3079-1de6-45ae-b8d2-d808f0cb2ae3.png" alt="">},
   { id: "m2", emoji: "🗡️", label: "Разбойник" },
   { id: "m3", emoji: "🛡️", label: "Страж" },
   { id: "m4", emoji: "🏹", label: "Лучник" },
