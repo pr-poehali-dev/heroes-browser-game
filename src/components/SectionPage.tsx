@@ -4,7 +4,8 @@ import DuelSection, { type DuelReward } from "@/components/DuelSection";
 import { DiaryEntry, HeroStats, SectionId } from "@/pages/Index";
 
 // ── Аватарки ──────────────────────────────────────────────────────────────────
-export const MALE_AVATARS = [
+export const MALE_AVATARS = [ 
+{ id: "m1", img src: "" label: "Воин"},
   { id: "m2", emoji: "🗡️", label: "Разбойник" },
   { id: "m3", emoji: "🛡️", label: "Страж" },
   { id: "m4", emoji: "🏹", label: "Лучник" },
