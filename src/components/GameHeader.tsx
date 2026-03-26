@@ -45,11 +45,12 @@ interface GameHeaderProps {
   saveStatus?: "idle" | "saving" | "saved";
   onLogout?: () => void;
   avatarId?: string;
+  avatarImageUrl?: string;
 }
 
 export default function GameHeader({
   hero, currentHp, maxHp, silver, battles, regenTimer, campaignTimer,
-  isCampaignActive, campaignNotice, onOpenSection, saveStatus = "idle", onLogout, avatarId = "m1",
+  isCampaignActive, campaignNotice, onOpenSection, saveStatus = "idle", onLogout, avatarId = "m1", avatarImageUrl = "",
 }: GameHeaderProps) {
   return (
     <header className="game-header">
@@ -70,7 +71,12 @@ export default function GameHeader({
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "8px 12px", justifyContent: "center" }}>
         {/* Аватарка + имя — кликабельна */}
         <div className="stat-badge rounded-[0.25rem]" onClick={() => onOpenSection("hero")} style={{ cursor: "pointer", gap: 5 }}>
-          <span style={{ fontSize: 18, lineHeight: 1 }}>{getAvatarEmoji(avatarId)}</span>
+          <span style={{ fontSize: 18, lineHeight: 1, width: 22, height: 22, display: "inline-flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRadius: 4 }}>
+            {avatarImageUrl
+              ? <img src={avatarImageUrl} alt="avatar" style={{ width: 22, height: 22, objectFit: "cover", borderRadius: 3 }} />
+              : getAvatarEmoji(avatarId)
+            }
+          </span>
           <span style={{ fontWeight: 600 }}>{hero.name}</span>
         </div>
         <div className="stat-badge rounded-full">

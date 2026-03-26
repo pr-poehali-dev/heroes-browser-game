@@ -12,6 +12,8 @@ hero-save — Сохранение и загрузка прогресса гер
 """
 import json
 import os
+import base64
+import boto3
 import pg8000.native
 from urllib.parse import urlparse, unquote
 
@@ -111,6 +113,29 @@ def handler(event: dict, context) -> dict:
 
     if method == "POST":
         body = json.loads(event.get("body") or "{}")
+
+        # Загрузка картинки аватарки в S3
+        if "avatar_image" in body:
+            img = body["avatar_image"]
+            img_data = base64.b64decode(img["data"])
+            mime = img.get("mime", "image/jpeg")
+            ext = mime.split("/")[-1].replace("jpeg", "jpg")
+            key = f"avatars/{esc(user_id)}.{ext}"
+            s3 = boto3.client(
+                "s3",
+                endpoint_url="https://bucket.poehali.dev",
+                aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+                aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+            )
+            s3.put_object(Bucket="files", Key=key, Body=img_data, ContentType=mime)
+            cdn_url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
+            conn.close()
+            return {
+                "statusCode": 200,
+                "headers": CORS_HEADERS,
+                "body": json.dumps({"saved": True, "avatar_image_url": cdn_url}),
+            }
+
         h = body.get("hero", {})
 
         name = esc(h.get("name", "Странник"))

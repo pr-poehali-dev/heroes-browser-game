@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "name": "Get duel players list",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"count": 0},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

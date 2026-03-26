@@ -112,7 +112,8 @@ const QUESTS_DEF: QuestDef[] = [
 export type SectionId =
   | "diary" | "quests" | "duel" | "village" | "campaign" | "dungeon"
   | "dragon" | "orcs" | "order" | "guild" | "menagerie" | "top"
-  | "main" | "hero" | "profile";
+  | "main" | "hero" | "profile"
+  | "training" | "mercenaries" | "march" | "invite";
 
 function getSavedSession(): { userId: string; username: string } | null {
   const userId = localStorage.getItem("heroes_user_id");
@@ -133,6 +134,7 @@ export default function Index() {
   const [stats, setStats] = useState<HeroStats>(INITIAL_STATS);
   const [duelDifficulty, setDuelDifficulty] = useState<"higher" | "equal" | "lower">("equal");
   const [avatarId, setAvatarId] = useState<string>(localStorage.getItem("heroes_avatar") || "m1");
+  const [avatarImageUrl, setAvatarImageUrl] = useState<string>(localStorage.getItem("heroes_avatar_image") || "");
 
   // Статистика побед/поражений/походов/времени в походе
   const [duelWins, setDuelWins] = useState(0);
@@ -406,39 +408,34 @@ export default function Index() {
     return () => clearInterval(interval);
   }, [mineEnd]);
 
-  // Боёв регенерация
+  // Боёв регенерация — запускается один раз, читает очередь через ref
   useEffect(() => {
-    if (battles >= MAX_BATTLES) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      setRegenTimer(null);
-      return;
-    }
     const tick = () => {
-      const now = Date.now();
       const queue = regenQueue.current;
-      if (queue.length === 0) return;
+      if (queue.length === 0) {
+        setRegenTimer(null);
+        return;
+      }
+      const now = Date.now();
       const earliest = queue[0];
       const left = earliest + REGEN_MS - now;
       if (left <= 0) {
         regenQueue.current = queue.slice(1);
-        setBattles((b) => {
-          const next = Math.min(MAX_BATTLES, b + 1);
-          if (next >= MAX_BATTLES && timerRef.current) {
-            clearInterval(timerRef.current);
-            setRegenTimer(null);
-          }
-          return next;
-        });
-        setRegenTimer(regenQueue.current.length > 0 ? regenQueue.current[0] + REGEN_MS - Date.now() : null);
+        setBattles((b) => Math.min(MAX_BATTLES, b + 1));
+        const nextQueue = regenQueue.current;
+        if (nextQueue.length > 0) {
+          setRegenTimer(Math.max(0, nextQueue[0] + REGEN_MS - Date.now()));
+        } else {
+          setRegenTimer(null);
+        }
       } else {
         setRegenTimer(left);
       }
     };
-    if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(tick, 1000);
     tick();
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [battles]);
+  }, []);
 
   const spendBattle = useCallback(() => {
     if (battles <= 0) return false;
@@ -643,6 +640,7 @@ export default function Index() {
         saveStatus={saveStatus}
         onLogout={handleLogout}
         avatarId={avatarId}
+        avatarImageUrl={avatarImageUrl}
       />
 
       <div style={{ maxWidth: 520, margin: "0 auto" }}>
@@ -696,6 +694,11 @@ export default function Index() {
             onUpgradePet={upgradePet}
             onStartMine={startMine}
             onClaimMine={claimMine}
+            avatarImageUrl={avatarImageUrl}
+            onChangeAvatarImage={(url) => {
+              setAvatarImageUrl(url);
+              localStorage.setItem("heroes_avatar_image", url);
+            }}
           />
         )}
 

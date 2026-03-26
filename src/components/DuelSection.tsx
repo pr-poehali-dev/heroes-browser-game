@@ -1,51 +1,36 @@
 /**
- * DuelSection.tsx — Система дуэлей (PvE бой)
+ * DuelSection.tsx — Система дуэлей
  *
- * За что отвечает:
- * - Генерация случайного противника (8 шаблонов: Громозека, Ведьмак77 и др.)
- * - Пошаговая симуляция боя (до 20 ходов)
- * - Формулы урона: base = atk - def×0.5, крит 20% (×1.8), промах = max(5%, 20% - spd + eSPD)
- * - Магические атаки (если magic > attack×0.8, шанс 35%)
- * - Лог боя с цветовой индикацией (криты, промахи, обычные атаки)
- * - Награды за победу: XP, серебро, слава
- * - Кнопки: «В бой!», «Другой противник», «Новый бой»
- * - Просмотр профиля противника
+ * Экраны:
+ * 1. "menu" — список категорий поиска (как в оригинальной игре)
+ * 2. "search" — список реальных игроков / наёмников
+ * 3. "fight" — бой с выбранным противником (5й скрин)
+ * 4. "result" — результат боя
  *
- * Экспортирует:
- * - DuelReward — интерфейс награды за дуэль
- * - DuelSection — основной компонент
+ * Реальные игроки загружаются из бэкенда.
+ * Наёмники генерируются на основе статов игрока.
  */
 import { useState, useRef, useEffect } from "react";
 import { HeroStats } from "@/pages/Index";
 import { getAvatarEmoji, getAvatarLabel } from "@/components/SectionPage";
 
-// ── Противники ────────────────────────────────────────────────────────────────
-const ENEMIES = [
-  { name: "Громозека", avatar: "👹" },
-  { name: "Ведьмак77", avatar: "🧙" },
-  { name: "СтальнойГарт", avatar: "⚔️" },
-  { name: "ТёмнаяЗвезда", avatar: "🌑" },
-  { name: "Скиталец", avatar: "🗺️" },
-  { name: "Варвар", avatar: "🪓" },
-  { name: "Чародей", avatar: "🔮" },
-  { name: "Следопыт", avatar: "🏹" },
-];
+const DUEL_PLAYERS_URL = "https://functions.poehali.dev/221a5e8c-747d-4b2a-ad80-afccad264e7b";
+
+export interface DuelReward {
+  xp: number; gold: number; silver: number; glory: number;
+}
 
 interface Fighter {
   name: string; level: number; hp: number; maxHp: number;
-  attack: number; defense: number; magic: number; speed: number; avatar: string;
+  attack: number; defense: number; magic: number; speed: number;
+  avatar: string; isReal?: boolean; userId?: string;
+  duel_wins?: number; duel_losses?: number; glory?: number; xp?: number;
 }
 
 interface BattleLog {
   id: number; turn: number; actor: "player" | "enemy" | "system";
   type: "attack" | "magic" | "miss" | "crit" | "system";
   text: string; damage?: number;
-}
-
-type BattlePhase = "ready" | "result";
-
-export interface DuelReward {
-  xp: number; gold: number; silver: number; glory: number;
 }
 
 interface DuelSectionProps {
@@ -63,6 +48,9 @@ interface DuelSectionProps {
   onDifficultyChange: (d: "higher" | "equal" | "lower") => void;
   playerLevel: number;
   onViewProfile?: (name: string, level: number) => void;
+  avatarId?: string;
+  avatarImageUrl?: string;
+  userId?: string;
 }
 
 const rnd = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -74,18 +62,33 @@ function formatTimer(ms: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function generateEnemy(playerLevel: number): Fighter {
-  const lvl = Math.max(1, playerLevel - rnd(0, 2));
-  const hp = 80 + lvl * 20 + rnd(-10, 10);
-  const idx = rnd(0, ENEMIES.length - 1);
+// Наёмники — генерируем относительно статов игрока
+function generateMercenary(playerStats: HeroStats, playerLevel: number, index: number): Fighter {
+  const MERCENARY_TYPES = [
+    { name: "Лазутчик Рикс", avatar: "🗡️" },
+    { name: "Страж Морван", avatar: "🛡️" },
+    { name: "Лучник Тайра", avatar: "🏹" },
+    { name: "Маг Зерул", avatar: "🔮" },
+    { name: "Берсерк Горд", avatar: "🪓" },
+    { name: "Жрица Алва", avatar: "🌸" },
+  ];
+  const t = MERCENARY_TYPES[index % MERCENARY_TYPES.length];
+  const variance = rnd(-2, 3);
+  const str = Math.max(1, playerStats.strength + variance);
+  const def = Math.max(1, playerStats.defense + variance);
+  const agi = Math.max(1, playerStats.agility + variance);
+  const mas = Math.max(1, playerStats.mastery + variance);
+  const vit = Math.max(1, playerStats.vitality + variance);
+  const hp = 100 + vit * 15 + rnd(-10, 10);
   return {
-    name: ENEMIES[idx].name,
-    avatar: ENEMIES[idx].avatar,
-    level: lvl, hp, maxHp: hp,
-    attack: 8 + lvl * 4 + rnd(-2, 2),
-    defense: 5 + lvl * 3 + rnd(-2, 2),
-    magic: 4 + lvl * 2 + rnd(-2, 2),
-    speed: 7 + lvl * 2 + rnd(-1, 1),
+    name: t.name, avatar: t.avatar,
+    level: Math.max(1, playerLevel + rnd(-1, 1)),
+    hp, maxHp: hp,
+    attack: 12 + str * 2 + mas + rnd(-2, 2),
+    defense: 8 + def * 2 + rnd(-2, 2),
+    magic: 6 + mas + rnd(-1, 1),
+    speed: 10 + agi + rnd(-1, 1),
+    isReal: false,
   };
 }
 
@@ -103,17 +106,12 @@ function simulateBattle(player: Fighter, enemy: Fighter): { logs: BattleLog[]; w
   const logs: BattleLog[] = [];
   let id = 0;
   const addLog = (entry: Omit<BattleLog, "id">) => { logs.push({ ...entry, id: ++id }); };
-
   const playerFirst = player.speed >= enemy.speed;
-  addLog({ turn: 0, actor: "system", type: "system", text: `⚔️ Дуэль начата! ${player.name} vs ${enemy.name}!` });
-  addLog({ turn: 0, actor: "system", type: "system", text: playerFirst ? `${player.name} действует первым (скорость ${player.speed} vs ${enemy.speed})` : `${enemy.name} действует первым (скорость ${enemy.speed} vs ${player.speed})` });
-
+  addLog({ turn: 0, actor: "system", type: "system", text: `⚔️ ${player.name} против ${enemy.name}!` });
   for (let turn = 1; turn <= 20; turn++) {
     const actions: Array<"player" | "enemy"> = playerFirst ? ["player", "enemy"] : ["enemy", "player"];
-
     for (const actor of actions) {
       if (pHp <= 0 || eHp <= 0) break;
-
       if (actor === "player") {
         const useMagic = player.magic > player.attack * 0.8 && rnd(1, 100) <= 35;
         const atk = useMagic ? Math.round(player.magic * 1.5) : player.attack;
@@ -123,8 +121,7 @@ function simulateBattle(player: Fighter, enemy: Fighter): { logs: BattleLog[]; w
           addLog({ turn, actor: "player", type: "miss", text: `${player.name} промахнулся!` });
         } else {
           eHp = Math.max(0, eHp - dmg);
-          const typeLabel = useMagic ? "магией" : "атакой";
-          addLog({ turn, actor: "player", type: isCrit ? "crit" : "attack", text: `${player.avatar ?? "🗡️"} ${player.name} наносит ${dmg} урона ${typeLabel}!${isCrit ? " 💥 КРИТ!" : ""}`, damage: dmg });
+          addLog({ turn, actor: "player", type: isCrit ? "crit" : "attack", text: `🗡️ ${player.name} наносит ${dmg} урона!${isCrit ? " 💥 КРИТ!" : ""}`, damage: dmg });
           if (eHp <= 0) { addLog({ turn, actor: "system", type: "system", text: `🏆 ${player.name} побеждает!` }); break; }
         }
       } else {
@@ -136,23 +133,20 @@ function simulateBattle(player: Fighter, enemy: Fighter): { logs: BattleLog[]; w
           addLog({ turn, actor: "enemy", type: "miss", text: `${enemy.name} промахнулся!` });
         } else {
           pHp = Math.max(0, pHp - dmg);
-          const typeLabel = useMagic ? "магией" : "атакой";
-          addLog({ turn, actor: "enemy", type: isCrit ? "crit" : "attack", text: `${enemy.avatar} ${enemy.name} наносит ${dmg} урона ${typeLabel}!${isCrit ? " 💥 КРИТ!" : ""}`, damage: dmg });
+          addLog({ turn, actor: "enemy", type: isCrit ? "crit" : "attack", text: `${enemy.avatar} ${enemy.name} наносит ${dmg} урона!${isCrit ? " 💥 КРИТ!" : ""}`, damage: dmg });
           if (pHp <= 0) { addLog({ turn, actor: "system", type: "system", text: `💀 ${player.name} повержен...` }); break; }
         }
       }
     }
     if (pHp <= 0 || eHp <= 0) break;
   }
-
-  const winner = pHp > eHp ? "player" : "enemy";
-  return { logs, winner };
+  return { logs, winner: pHp > eHp ? "player" : "enemy" };
 }
 
-function hpBar(hp: number, maxHp: number, color = "#ee3333") {
+function hpBar(hp: number, maxHp: number, color = "#c0392b") {
   return (
     <div style={{ height: 8, background: "#d0c090", border: "1px solid #a08040", borderRadius: 3, overflow: "hidden", width: "100%" }}>
-      <div style={{ height: "100%", width: `${Math.max(0, (hp / maxHp) * 100)}%`, background: `linear-gradient(90deg,${color}99,${color})`, transition: "width 0.3s" }} />
+      <div style={{ height: "100%", width: `${Math.max(0, (hp / maxHp) * 100)}%`, background: color, transition: "width 0.3s" }} />
     </div>
   );
 }
@@ -169,130 +163,362 @@ function logStyle(log: BattleLog): { bg: string; border: string; color: string }
   return { bg: "#ffebee", border: "#ef9a9a", color: "#7f0000" };
 }
 
+const SEARCH_CATEGORIES = [
+  { id: "equal",   label: "Ровня",     icon: "🟢", desc: "Игроки близкого уровня" },
+  { id: "lower",   label: "Младшие",   icon: "🔵", desc: "Игроки ниже уровнем" },
+  { id: "higher",  label: "Старшие",   icon: "🟡", desc: "Игроки выше уровнем" },
+  { id: "mercenaries", label: "Наемники", icon: "⚔️", desc: "Нанятые бойцы" },
+  { id: "byLevel", label: "По уровню", icon: "📊", desc: "Поиск по уровню" },
+  { id: "byName",  label: "По имени",  icon: "🔍", desc: "Поиск по имени" },
+];
+
+type DuelScreen = "menu" | "search" | "fight" | "result";
+
 export default function DuelSection({
   hero, stats, battles, maxBattles, regenTimer,
-  onSpendBattle, onDuelEnd, playerLevel, onViewProfile,
+  onSpendBattle, onDuelEnd, playerLevel, onViewProfile, avatarId = "m1", avatarImageUrl, userId = "",
 }: DuelSectionProps) {
-  const [phase, setPhase] = useState<BattlePhase>("ready");
-  const [enemy, setEnemy] = useState<Fighter>(() => generateEnemy(playerLevel));
+  const [screen, setScreen] = useState<DuelScreen>("menu");
+  const [searchCategory, setSearchCategory] = useState<string>("");
+  const [players, setPlayers] = useState<Fighter[]>([]);
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
+  const [selectedEnemy, setSelectedEnemy] = useState<Fighter | null>(null);
   const [logs, setLogs] = useState<BattleLog[]>([]);
   const [winner, setWinner] = useState<"player" | "enemy" | null>(null);
   const [reward, setReward] = useState<DuelReward>({ xp: 0, gold: 0, silver: 0, glory: 0 });
   const logsEndRef = useRef<HTMLDivElement>(null);
 
-  const player: Fighter = {
-    name: hero.name,
-    level: hero.level,
-    hp: hero.hp,
-    maxHp: hero.maxHp,
-    attack: hero.attack,
-    defense: hero.defense,
-    magic: hero.magic,
-    speed: hero.speed,
-    avatar: "🗡️",
-  };
-
-  const avatarId = localStorage.getItem("heroes_avatar") ?? "m1";
-
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
-  const findNewEnemy = () => {
-    setEnemy(generateEnemy(playerLevel));
-    setLogs([]);
-    setWinner(null);
-    setPhase("ready");
+  const player: Fighter = {
+    name: hero.name, level: hero.level,
+    hp: hero.hp, maxHp: hero.maxHp,
+    attack: hero.attack, defense: hero.defense,
+    magic: hero.magic, speed: hero.speed,
+    avatar: avatarImageUrl ? "img" : getAvatarEmoji(avatarId),
   };
 
-  const fight = () => {
-    if (!onSpendBattle()) return;
-    const { logs: battleLogs, winner: w } = simulateBattle(player, enemy);
-    setLogs(battleLogs);
-    setWinner(w);
-    setPhase("result");
-    if (w === "player") {
-      const r: DuelReward = { xp: rnd(1, 2), gold: 0, silver: rnd(15, 50), glory: 1 };
-      setReward(r);
-      onDuelEnd("victory", enemy.name, r);
+  const loadRealPlayers = async (category: string) => {
+    setLoadingPlayers(true);
+    try {
+      const res = await fetch(`${DUEL_PLAYERS_URL}?limit=20`, {
+        headers: { "X-User-Id": userId || localStorage.getItem("heroes_user_id") || "" },
+      });
+      const data = await res.json();
+      let list: Fighter[] = (data.players || []).map((p: Record<string, unknown>) => {
+        const str = (p.stat_strength as number) || 5;
+        const def = (p.stat_defense as number) || 5;
+        const agi = (p.stat_agility as number) || 5;
+        const mas = (p.stat_mastery as number) || 5;
+        const vit = (p.stat_vitality as number) || 5;
+        const lvl = (p.level as number) || 1;
+        const hp = 100 + vit * 15;
+        return {
+          name: p.name as string,
+          level: lvl,
+          avatar: p.avatar as string,
+          hp, maxHp: hp,
+          attack: 12 + str * 2 + mas,
+          defense: 8 + def * 2,
+          magic: 6 + mas,
+          speed: 10 + agi,
+          isReal: true,
+          userId: p.user_id as string,
+          duel_wins: p.duel_wins as number || 0,
+          duel_losses: p.duel_losses as number || 0,
+          glory: p.glory as number || 0,
+          xp: p.xp as number || 0,
+        };
+      });
+      if (category === "lower") list = list.filter(p => p.level < playerLevel).slice(0, 10);
+      else if (category === "higher") list = list.filter(p => p.level > playerLevel).slice(0, 10);
+      else if (category === "equal") list = list.filter(p => Math.abs(p.level - playerLevel) <= 2).slice(0, 10);
+      else list = list.slice(0, 10);
+      setPlayers(list);
+    } catch {
+      setPlayers([]);
+    }
+    setLoadingPlayers(false);
+  };
+
+  const loadMercenaries = () => {
+    const mercs: Fighter[] = Array.from({ length: 6 }, (_, i) => generateMercenary(stats, playerLevel, i));
+    setPlayers(mercs);
+    setLoadingPlayers(false);
+  };
+
+  const openSearch = (category: string) => {
+    setSearchCategory(category);
+    setScreen("search");
+    setPlayers([]);
+    if (category === "mercenaries") {
+      loadMercenaries();
     } else {
-      const r: DuelReward = { xp: 0, gold: 0, silver: 0, glory: 0 };
-      setReward(r);
-      onDuelEnd("defeat", enemy.name, r);
+      loadRealPlayers(category);
     }
   };
 
-  // Вычисляем финальный HP из симуляции
-  const finalPlayerHpPct = winner === "player" ? 0.3 : 0; // приблизительно для отображения
-  const finalEnemyHpPct = winner === "enemy" ? 0.3 : 0;
+  const selectEnemy = (enemy: Fighter) => {
+    setSelectedEnemy(enemy);
+    setScreen("fight");
+    setLogs([]);
+    setWinner(null);
+  };
 
-  const statRow = (icon: string, label: string, playerVal: number | string, enemyVal: number | string) => (
-    <div key={label} style={{ display: "grid", gridTemplateColumns: "1fr 80px 1fr", gap: 4, alignItems: "center", fontSize: 12, padding: "3px 0" }}>
-      <div style={{ textAlign: "right", color: "var(--text-dark)", fontWeight: 600 }}>{playerVal}</div>
-      <div style={{ textAlign: "center", color: "var(--text-medium)", fontSize: 11 }}>{icon} {label}</div>
-      <div style={{ textAlign: "left", color: "var(--text-dark)", fontWeight: 600 }}>{enemyVal}</div>
-    </div>
-  );
+  const fight = () => {
+    if (!selectedEnemy) return;
+    if (!onSpendBattle()) return;
+    const { logs: battleLogs, winner: w } = simulateBattle(player, selectedEnemy);
+    setLogs(battleLogs);
+    setWinner(w);
+    setScreen("result");
+    if (w === "player") {
+      const r: DuelReward = { xp: rnd(1, 2), gold: 0, silver: rnd(15, 50), glory: 1 };
+      setReward(r);
+      onDuelEnd("victory", selectedEnemy.name, r);
+    } else {
+      const r: DuelReward = { xp: 0, gold: 0, silver: 0, glory: 0 };
+      setReward(r);
+      onDuelEnd("defeat", selectedEnemy.name, r);
+    }
+  };
 
-  return (
-    <div className="animate-fade-in">
-      <h2 style={{ fontFamily: "'Cormorant Garamond', serif", color: "var(--crimson)", fontSize: 22, fontWeight: 700, marginBottom: 12 }}>⚔️ Дуэль</h2>
-
-      {/* Счётчик боёв */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, background: "#faf6e8", border: "1px solid var(--parchment-border)", borderRadius: 4, padding: "8px 12px" }}>
-        <span style={{ fontSize: 13, color: "var(--text-medium)" }}>Боевые заряды:</span>
-        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-dark)" }}>⚔️ {battles}/{maxBattles}</span>
-        {regenTimer !== null && battles < maxBattles && (
-          <span style={{ fontSize: 11, color: "var(--gold)", marginLeft: 4 }}>+1 через {formatTimer(regenTimer)}</span>
-        )}
-        {battles === 0 && (
-          <span style={{ fontSize: 11, color: "#cc4444", marginLeft: 2 }}>Боёв нет!</span>
-        )}
+  const getAvatarDisplay = (f: Fighter, size = 48) => {
+    const avatarEmoji = f.isReal ? (getAvatarEmoji(f.avatar) || f.avatar || "⚔️") : f.avatar;
+    return (
+      <div style={{
+        width: size, height: size, borderRadius: 6, background: "#2a1010",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: size * 0.6, border: "2px solid #c8a96e", overflow: "hidden", flexShrink: 0,
+      }}>
+        {avatarEmoji}
       </div>
+    );
+  };
 
-      {/* Карточки противников */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 28px 1fr", gap: 8, alignItems: "stretch", marginBottom: 12 }}>
-        {/* Игрок */}
-        <div className="game-panel-inner" style={{ borderRadius: 6, padding: "12px 10px", textAlign: "center", border: "2px solid #c8a96e" }}>
-          <div style={{ fontSize: 40, marginBottom: 6, lineHeight: 1 }}>{getAvatarEmoji(avatarId)}</div>
-          <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-dark)", marginBottom: 1 }}>{player.name}</div>
-          <div style={{ fontSize: 11, color: "var(--gold)", marginBottom: 6 }}>Ур. {player.level} · {getAvatarLabel(avatarId)}</div>
-          {phase === "result" ? hpBar(winner === "player" ? Math.floor(player.maxHp * 0.25 + Math.random() * player.maxHp * 0.4) : 0, player.maxHp) : hpBar(player.hp, player.maxHp)}
-          <div style={{ fontSize: 10, color: "var(--text-medium)", marginTop: 3 }}>{phase === "result" ? (winner === "player" ? "Выжил" : "Повержен") : `${player.hp}/${player.maxHp} HP`}</div>
+  // ── ЭКРАН 1: Меню дуэли ────────────────────────────────────────────────────
+  if (screen === "menu") {
+    return (
+      <div className="animate-fade-in">
+        <div style={{ textAlign: "center", borderBottom: "1px solid var(--parchment-border)", paddingBottom: 8, marginBottom: 0 }}>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "var(--text-dark)", marginBottom: 2 }}>
+            Дуэль
+          </h2>
+          <p style={{ fontSize: 12, color: "var(--text-medium)" }}>Покажи, на что ты способен!</p>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: "var(--crimson)" }}>VS</span>
+        {/* Боевые заряды */}
+        <div style={{ padding: "8px 14px", borderBottom: "1px solid #e2d9bc", background: "#f5f0e0", display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 13, color: "var(--text-medium)" }}>Поиск</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-dark)" }}>⚔️ {battles}/{maxBattles}</span>
+          {regenTimer !== null && battles < maxBattles && (
+            <span style={{ fontSize: 11, color: "var(--gold)", marginLeft: 4 }}>+1 через {formatTimer(regenTimer)}</span>
+          )}
         </div>
 
-        {/* Враг */}
-        <div className="game-panel-inner" style={{ borderRadius: 6, padding: "12px 10px", textAlign: "center", border: "2px solid #e57373", cursor: "pointer" }}
-          onClick={() => onViewProfile?.(enemy.name, enemy.level)}>
-          <div style={{ width: 48, height: 48, borderRadius: 6, background: "#3a1a1a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, margin: "0 auto 6px", border: "2px solid #e57373" }}>
-            {enemy.avatar}
+        {/* Категории */}
+        <div style={{ background: "#faf6e8" }}>
+          {SEARCH_CATEGORIES.map((cat, i) => (
+            <div
+              key={cat.id}
+              onClick={() => openSearch(cat.id)}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "13px 16px",
+                borderBottom: i < SEARCH_CATEGORIES.length - 1 ? "1px solid #e2d9bc" : "none",
+                cursor: "pointer",
+              }}
+            >
+              <span style={{ fontSize: 18, width: 22, textAlign: "center" }}>{cat.icon}</span>
+              <span style={{ fontSize: 15, color: "var(--text-dark)", fontWeight: 500 }}>{cat.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── ЭКРАН 2: Список противников ───────────────────────────────────────────
+  if (screen === "search") {
+    const catInfo = SEARCH_CATEGORIES.find(c => c.id === searchCategory);
+    return (
+      <div className="animate-fade-in">
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0 12px" }}>
+          <button onClick={() => setScreen("menu")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--crimson)", display: "flex", alignItems: "center", gap: 3 }}>
+            ← Назад
+          </button>
+          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: "var(--text-dark)" }}>
+            {catInfo?.icon} {catInfo?.label}
+          </span>
+        </div>
+
+        {loadingPlayers && (
+          <div style={{ textAlign: "center", padding: "30px 0", color: "var(--text-medium)", fontSize: 13 }}>
+            Поиск противников...
           </div>
-          <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-dark)", marginBottom: 1, textDecoration: "underline dotted" }}>{enemy.name}</div>
-          <div style={{ fontSize: 11, color: "var(--gold)", marginBottom: 6 }}>Ур. {enemy.level}</div>
-          {phase === "result" ? hpBar(winner === "enemy" ? Math.floor(enemy.maxHp * 0.15 + Math.random() * enemy.maxHp * 0.3) : 0, enemy.maxHp, "#7c3aed") : hpBar(enemy.hp, enemy.maxHp, "#7c3aed")}
-          <div style={{ fontSize: 10, color: "var(--text-medium)", marginTop: 3 }}>{phase === "result" ? (winner === "enemy" ? "Выжил" : "Повержен") : `${enemy.hp}/${enemy.maxHp} HP`}</div>
+        )}
+
+        {!loadingPlayers && players.length === 0 && (
+          <div style={{ textAlign: "center", padding: "30px 0", color: "var(--text-medium)", fontSize: 13 }}>
+            Противников не найдено. Попробуй другую категорию.
+          </div>
+        )}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          {players.map((p, i) => (
+            <div
+              key={`${p.name}-${i}`}
+              onClick={() => selectEnemy(p)}
+              style={{
+                display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
+                borderBottom: i < players.length - 1 ? "1px solid #e2d9bc" : "none",
+                background: "#faf6e8", cursor: "pointer",
+              }}
+            >
+              {getAvatarDisplay(p, 44)}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-dark)" }}>{p.name}</div>
+                <div style={{ fontSize: 12, color: "var(--text-medium)" }}>
+                  Ур. {p.level} · ⚔️ {p.attack} · 🛡️ {p.defense}
+                  {p.isReal && p.duel_wins !== undefined && <> · 🏆 {p.duel_wins} побед</>}
+                </div>
+              </div>
+              <span style={{ fontSize: 12, color: "var(--crimson)", fontWeight: 600 }}>Вызвать →</span>
+            </div>
+          ))}
         </div>
       </div>
+    );
+  }
 
-      {/* Сравнение параметров */}
-      <div className="game-panel-inner" style={{ borderRadius: 4, padding: "10px 12px", marginBottom: 12 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-medium)", textAlign: "center", marginBottom: 6 }}>ХАРАКТЕРИСТИКИ</div>
-        {statRow("⚔️", "Атака", player.attack, enemy.attack)}
-        {statRow("🛡️", "Защита", player.defense, enemy.defense)}
-        {statRow("🔮", "Магия", player.magic, enemy.magic)}
-        {statRow("🏃", "Скорость", player.speed, enemy.speed)}
-        {statRow("❤️", "HP", `${player.hp}/${player.maxHp}`, `${enemy.hp}/${enemy.maxHp}`)}
-        {statRow("💪", "Сила", stats.strength, "?")}
-        {statRow("⚔️", "Мастерство", stats.mastery, "?")}
+  // ── ЭКРАН 3: Бой (выбранный противник, картинка 5) ────────────────────────
+  if (screen === "fight" && selectedEnemy) {
+    const STAT_ICONS: [string, string, number, number][] = [
+      ["💪", "Сила", stats.strength, selectedEnemy.attack - 12],
+      ["🛡️", "Защита", stats.defense, selectedEnemy.defense - 8],
+      ["🌀", "Ловкость", stats.agility, selectedEnemy.speed - 10],
+      ["🤚", "Мастерство", stats.mastery, (selectedEnemy.magic - 6)],
+      ["🌿", "Живучесть", stats.vitality, Math.round((selectedEnemy.maxHp - 100) / 15)],
+    ];
+
+    return (
+      <div className="animate-fade-in">
+        <div style={{ textAlign: "center", padding: "8px 0 12px", borderBottom: "1px solid var(--parchment-border)" }}>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: "var(--text-dark)" }}>
+            Дуэль
+          </h2>
+          <p style={{ fontSize: 13, color: "var(--text-dark)", fontWeight: 600 }}>
+            <span style={{ textTransform: "uppercase" }}>{hero.name}</span>
+            {" "}против{" "}
+            <span style={{ color: "var(--crimson)" }}>{selectedEnemy.name}</span>
+          </p>
+        </div>
+
+        {/* Портреты */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 24, padding: "16px 0 12px" }}>
+          {/* Игрок */}
+          <div style={{ textAlign: "center" }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: 8, background: "#2a1010",
+              border: "2px solid #c8a96e", overflow: "hidden", display: "flex",
+              alignItems: "center", justifyContent: "center", fontSize: 46, margin: "0 auto 4px",
+            }}>
+              {avatarImageUrl
+                ? <img src={avatarImageUrl} alt="me" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : getAvatarEmoji(avatarId)
+              }
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-dark)" }}>{hero.name}</div>
+          </div>
+          {/* Враг */}
+          <div style={{ textAlign: "center" }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: 8, background: "#2a1010",
+              border: "2px solid #c8a96e", overflow: "hidden", display: "flex",
+              alignItems: "center", justifyContent: "center", fontSize: 46, margin: "0 auto 4px",
+            }}>
+              {getAvatarEmoji(selectedEnemy.avatar) || selectedEnemy.avatar || "⚔️"}
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--crimson)" }}>{selectedEnemy.name}</div>
+          </div>
+        </div>
+
+        {/* Сравнение параметров */}
+        <div style={{ padding: "0 16px 12px" }}>
+          {STAT_ICONS.map(([icon, , playerVal, enemyVal]) => (
+            <div key={icon} style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr", gap: 4, alignItems: "center", padding: "3px 0", fontSize: 13 }}>
+              <div style={{ textAlign: "right", fontWeight: 700, color: "var(--text-dark)" }}>{playerVal}</div>
+              <div style={{ textAlign: "center", fontSize: 18 }}>{icon}</div>
+              <div style={{ textAlign: "left", fontWeight: 700, color: "var(--text-dark)" }}>{enemyVal}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Кнопка Сражаться */}
+        <div style={{ textAlign: "center", marginBottom: 14 }}>
+          <button
+            onClick={fight}
+            disabled={battles <= 0}
+            style={{
+              padding: "10px 36px", borderRadius: 20, fontWeight: 700, fontSize: 16,
+              border: "2px solid #8b1a1a",
+              background: battles > 0 ? "linear-gradient(180deg,#c0392b,#8b1a1a)" : "#ccc",
+              color: battles > 0 ? "#fff" : "#999",
+              cursor: battles > 0 ? "pointer" : "not-allowed",
+              boxShadow: battles > 0 ? "0 3px 8px rgba(0,0,0,0.3)" : "none",
+              fontFamily: "'Cormorant Garamond', serif",
+              letterSpacing: "0.05em",
+            }}
+          >
+            ⚔️ Сражаться
+          </button>
+        </div>
+
+        {/* Доп. параметры противника */}
+        {selectedEnemy.isReal && (
+          <div style={{ padding: "0 4px", fontSize: 13, color: "var(--text-medium)", lineHeight: 1.8 }}>
+            <div style={{ fontWeight: 700, color: "var(--text-dark)", marginBottom: 4 }}>
+              Другие параметры {selectedEnemy.name}:
+            </div>
+            <div>🏅 Уровень: {selectedEnemy.level}</div>
+            <div>📈 Опыт: {selectedEnemy.xp || 0}</div>
+            <div>🏆 Побед: {selectedEnemy.duel_wins || 0}</div>
+            <div>⭐ Слава: {selectedEnemy.glory || 0}</div>
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+          <button onClick={() => setScreen("search")} style={{ flex: 1, padding: "9px", borderRadius: 4, fontWeight: 600, fontSize: 13, background: "#f5f0e0", color: "var(--text-dark)", border: "1px solid var(--parchment-border)", cursor: "pointer" }}>
+            ← Следующий
+          </button>
+          <button onClick={() => setScreen("menu")} style={{ padding: "9px 14px", borderRadius: 4, fontWeight: 600, fontSize: 13, background: "#f5f0e0", color: "var(--text-dark)", border: "1px solid var(--parchment-border)", cursor: "pointer" }}>
+            К выбору
+          </button>
+        </div>
+
+        {battles === 0 && (
+          <div style={{ marginTop: 8, padding: "10px", borderRadius: 4, background: "#fff5f0", border: "1px solid #fca5a5", fontSize: 12, color: "#9b1c1c", textAlign: "center" }}>
+            ⏳ Боёв не осталось. Восстановление {regenTimer !== null ? `через ${formatTimer(regenTimer)}` : "скоро"}
+          </div>
+        )}
       </div>
+    );
+  }
 
-      {/* Лог боя */}
-      {logs.length > 0 && (
-        <div className="game-panel-inner" style={{ borderRadius: 4, padding: "8px 10px", marginBottom: 12, maxHeight: 220, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+  // ── ЭКРАН 4: Результат ────────────────────────────────────────────────────
+  if (screen === "result") {
+    return (
+      <div className="animate-fade-in">
+        <div style={{ textAlign: "center", padding: "8px 0 12px" }}>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "var(--text-dark)" }}>
+            Дуэль
+          </h2>
+        </div>
+
+        {/* Лог боя */}
+        <div className="game-panel-inner" style={{ borderRadius: 4, padding: "8px 10px", marginBottom: 12, maxHeight: 280, overflowY: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
           {logs.map((log) => {
             const { bg, border, color } = logStyle(log);
             return (
@@ -304,58 +530,36 @@ export default function DuelSection({
           })}
           <div ref={logsEndRef} />
         </div>
-      )}
 
-      {/* Результат */}
-      {phase === "result" && winner === "player" && (
-        <div style={{ textAlign: "center", padding: "14px", background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", border: "2px solid #4ade80", borderRadius: 6, marginBottom: 10 }}>
-          <div style={{ fontSize: 32, marginBottom: 6 }}>🏆</div>
-          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: "#15803d", marginBottom: 4 }}>Победа!</div>
-          <div style={{ fontSize: 13, color: "#166534", marginBottom: 12 }}>
-            {reward.glory > 0 && <>{reward.glory} ⭐&nbsp;·&nbsp;</>}
-            {reward.xp > 0 && <>{reward.xp} опыта&nbsp;·&nbsp;</>}
-            {reward.silver > 0 && <>{reward.silver} серебра</>}
+        {/* Результат */}
+        {winner === "player" ? (
+          <div style={{ textAlign: "center", padding: "14px", background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", border: "2px solid #4ade80", borderRadius: 6, marginBottom: 12 }}>
+            <div style={{ fontSize: 32, marginBottom: 6 }}>🏆</div>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: "#15803d", marginBottom: 4 }}>Победа!</div>
+            <div style={{ fontSize: 13, color: "#166534" }}>
+              {reward.glory > 0 && <>{reward.glory} ⭐ · </>}
+              {reward.xp > 0 && <>{reward.xp} опыта · </>}
+              {reward.silver > 0 && <>{reward.silver} серебра</>}
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={findNewEnemy} style={{ flex: 1, padding: "8px", borderRadius: 4, fontWeight: 700, fontSize: 13, background: "var(--crimson)", color: "var(--parchment)", border: "none", cursor: "pointer" }}>
-              Новая дуэль
-            </button>
+        ) : (
+          <div style={{ textAlign: "center", padding: "14px", background: "linear-gradient(135deg,#fff5f5,#fce4ec)", border: "2px solid #ef9a9a", borderRadius: 6, marginBottom: 12 }}>
+            <div style={{ fontSize: 32, marginBottom: 6 }}>💀</div>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: "#9b1c1c", marginBottom: 4 }}>Поражение...</div>
           </div>
-        </div>
-      )}
+        )}
 
-      {phase === "result" && winner === "enemy" && (
-        <div style={{ textAlign: "center", padding: "14px", background: "linear-gradient(135deg,#fff5f5,#fce4ec)", border: "2px solid #ef9a9a", borderRadius: 6, marginBottom: 10 }}>
-          <div style={{ fontSize: 32, marginBottom: 6 }}>💀</div>
-          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: "#9b1c1c", marginBottom: 4 }}>Поражение...</div>
-          <button onClick={findNewEnemy} style={{ padding: "8px 20px", borderRadius: 4, fontWeight: 700, fontSize: 13, background: "#7f1d1d", color: "#fef2f2", border: "none", cursor: "pointer" }}>
-            Снова в бой
-          </button>
-        </div>
-      )}
-
-      {/* Кнопки действий */}
-      {phase === "ready" && (
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={fight} disabled={battles <= 0}
-            style={{ flex: 1, padding: "12px", borderRadius: 4, fontWeight: 700, fontSize: 15, background: battles > 0 ? "var(--crimson)" : "#ccc", color: battles > 0 ? "var(--parchment)" : "#999", border: "none", cursor: battles > 0 ? "pointer" : "not-allowed", fontFamily: "'Cormorant Garamond', serif", letterSpacing: "0.05em" }}>
-            ⚔️ Напасть
+          <button onClick={() => { setScreen("fight"); setLogs([]); setWinner(null); }} style={{ flex: 1, padding: "10px", borderRadius: 4, fontWeight: 700, fontSize: 14, background: "var(--crimson)", color: "var(--parchment)", border: "none", cursor: "pointer" }}>
+            ⚔️ Снова в бой
           </button>
-          <button onClick={findNewEnemy}
-            style={{ padding: "12px 14px", borderRadius: 4, fontWeight: 600, fontSize: 13, background: "#f5f0e0", color: "var(--text-dark)", border: "1px solid var(--parchment-border)", cursor: "pointer" }}>
-            🔄
+          <button onClick={() => setScreen("search")} style={{ flex: 1, padding: "10px", borderRadius: 4, fontWeight: 600, fontSize: 13, background: "#f5f0e0", color: "var(--text-dark)", border: "1px solid var(--parchment-border)", cursor: "pointer" }}>
+            Другой противник
           </button>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {battles === 0 && phase === "ready" && (
-        <div style={{ marginTop: 8, padding: "10px", borderRadius: 4, background: "#fff5f0", border: "1px solid #fca5a5", fontSize: 12, color: "#9b1c1c", textAlign: "center" }}>
-          ⏳ Боёв не осталось. Восстановление {regenTimer !== null ? `через ${formatTimer(regenTimer)}` : "скоро"}
-        </div>
-      )}
-
-      {/* Дуэли заблокированы в походе — проп isCampaignActive не передаём, 
-          это блокируется в MainPage. Если всё же нужно — добавить флаг */}
-    </div>
-  );
+  return null;
 }
