@@ -466,6 +466,21 @@ export default function Index() {
 
   const onDuelEnd = useCallback(
     (result: "victory" | "defeat", enemyName: string, reward: DuelReward) => {
+      // Вычитаем полученный урон из текущего HP
+      const damageTaken = reward.damageTaken ?? 0;
+      let newHp = 0;
+      let forcedDefeat = false;
+      setCurrentHp((prev) => {
+        newHp = Math.max(0, prev - damageTaken);
+        if (newHp <= 40) {
+          forcedDefeat = true;
+          newHp = Math.max(0, newHp);
+        }
+        return newHp;
+      });
+
+      const finalResult = (result === "defeat" || forcedDefeat) ? "defeat" : "victory";
+
       setSilver((s) => s + reward.silver);
       setGlory((g) => g + reward.glory);
       setXp((x) => x + reward.xp);
@@ -473,7 +488,7 @@ export default function Index() {
 
       const now = new Date();
       const dateStr = formatDiaryDate(now);
-      if (result === "victory") {
+      if (finalResult === "victory") {
         setDuelWins((w) => w + 1);
         const parts: string[] = [];
         if (reward.glory > 0) parts.push(`+${reward.glory} ⭐ славы`);
@@ -498,7 +513,10 @@ export default function Index() {
         });
       } else {
         setDuelLosses((l) => l + 1);
-        const newEntry: DiaryEntry = { id: diaryIdRef.current + 1, date: dateStr, icon: "💀", text: `Поражение от ${enemyName} в дуэли.`, type: "duel_lose" };
+        const defeatText = forcedDefeat
+          ? `Поражение от ${enemyName} — слишком мало здоровья после боя.`
+          : `Поражение от ${enemyName} в дуэли.`;
+        const newEntry: DiaryEntry = { id: diaryIdRef.current + 1, date: dateStr, icon: "💀", text: defeatText, type: "duel_lose" };
         diaryIdRef.current += 1;
         const newDiary = [newEntry, ...diary].slice(0, MAX_DIARY_ENTRIES);
         setDiary(newDiary);

@@ -17,7 +17,7 @@ import { getAvatarEmoji, getAvatarLabel } from "@/components/SectionPage";
 const DUEL_PLAYERS_URL = "https://functions.poehali.dev/221a5e8c-747d-4b2a-ad80-afccad264e7b";
 
 export interface DuelReward {
-  xp: number; gold: number; silver: number; glory: number;
+  xp: number; gold: number; silver: number; glory: number; damageTaken: number;
 }
 
 interface Fighter {
@@ -292,11 +292,11 @@ export default function DuelSection({
     setShowDetails(false);
     setScreen("result");
     if (w === "player") {
-      const r: DuelReward = { xp: rnd(1, 2), gold: 0, silver: rnd(15, 50), glory: 1 };
+      const r: DuelReward = { xp: rnd(1, 2), gold: 0, silver: rnd(15, 50), glory: 1, damageTaken: totalEnemyDmg };
       setReward(r);
       onDuelEnd("victory", selectedEnemy.name, r);
     } else {
-      const r: DuelReward = { xp: 0, gold: 0, silver: 0, glory: 0 };
+      const r: DuelReward = { xp: 0, gold: 0, silver: 0, glory: 0, damageTaken: totalEnemyDmg };
       setReward(r);
       onDuelEnd("defeat", selectedEnemy.name, r);
     }
