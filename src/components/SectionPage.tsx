@@ -62,12 +62,17 @@ const SECTIONS = [
   { id: "top", label: "Лучшие", icon: "🏆" },
 ];
 
-// Стоимость статов
+// Стоимость прокачки: степенная формула cost = a * level^n
+const STAT_COST_COEFFS: Record<keyof HeroStats, { a: number; n: number }> = {
+  strength:  { a: 0.000344, n: 4.856 },
+  defense:   { a: 0.000631, n: 4.378 },
+  agility:   { a: 0.000588, n: 4.419 },
+  mastery:   { a: 0.000160, n: 5.283 },
+  vitality:  { a: 0.000419, n: 4.705 },
+};
 const STAT_COST = (key: keyof HeroStats, level: number): number => {
-  const base = level * 50;
-  if (key === "strength" || key === "mastery") return Math.round(base * 1.5);
-  if (key === "vitality") return Math.round(base * 0.6);
-  return base;
+  const c = STAT_COST_COEFFS[key];
+  return Math.max(1, Math.round(c.a * Math.pow(level, c.n)));
 };
 
 const STAT_INFO = [

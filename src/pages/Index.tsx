@@ -58,13 +58,21 @@ const INITIAL_STATS: HeroStats = {
   vitality: 5,
 };
 
-// Сила и Мастерство — дороже (×1.5), Живучесть — дешевле (×0.6), остальные — базовая
-const STAT_COST_FN = (key: keyof HeroStats, level: number): number => {
-  const base = level * 50;
-  if (key === "strength" || key === "mastery") return Math.round(base * 1.5);
-  if (key === "vitality") return Math.round(base * 0.6);
-  return base;
+// Стоимость прокачки: степенная формула подобрана по реальным данным
+// cost = a * level^n, где при level=5 cost≈1, проверено на высоких уровнях
+const STAT_COST_COEFFS: Record<keyof HeroStats, { a: number; n: number }> = {
+  strength:  { a: 0.000344, n: 4.856 }, // Сила 28→29: 4300 серебра
+  defense:   { a: 0.000631, n: 4.378 }, // Защита 29→30: 2105 серебра
+  agility:   { a: 0.000588, n: 4.419 }, // Ловкость 25→26: 1225 серебра
+  mastery:   { a: 0.000160, n: 5.283 }, // Мастерство 18→19: 870 серебра
+  vitality:  { a: 0.000419, n: 4.705 }, // Живучесть 19→20: 860 серебра
 };
+const STAT_COST_FN = (key: keyof HeroStats, level: number): number => {
+  const c = STAT_COST_COEFFS[key];
+  return Math.max(1, Math.round(c.a * Math.pow(level, c.n)));
+};
+// HP: на уровне 5 = 100, на уровне 152 = 129500
+const calcMaxHp = (vit: number) => Math.max(1, Math.round(68.29 * Math.pow(vit, 1.51) - 687.7));
 
 const HERO_BASE = {
   name: "Странник",
@@ -142,9 +150,9 @@ export default function Index() {
   const [campaignCount, setCampaignCount] = useState(0);
   const [campaignMinutesTotal, setCampaignMinutesTotal] = useState(0);
 
-  // HP: максимум = 100 + vitality*15, восстановление = 10% от максимума в час
-  const maxHp = 100 + stats.vitality * 15;
-  const [currentHp, setCurrentHp] = useState(100);
+  // HP: степенная формула — 5 уровень = 100 HP, 152 уровень = 129500 HP
+  const maxHp = calcMaxHp(stats.vitality);
+  const [currentHp, setCurrentHp] = useState(calcMaxHp(5));
   const regenPerHour = Math.round(maxHp * 0.10);
 
   const [profileView, setProfileView] = useState<{ name: string; level: number } | null>(null);
@@ -158,7 +166,7 @@ export default function Index() {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentHp((prev) => {
-        const max = 100 + stats.vitality * 15;
+        const max = calcMaxHp(stats.vitality);
         if (prev >= max) return prev;
         const perHour = Math.round(max * 0.10);
         hpAccRef.current += perHour / 3600;
