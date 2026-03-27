@@ -1,15 +1,3 @@
-/**
- * GameHeader.tsx — Шапка игры (верхняя панель)
- *
- * За что отвечает:
- * - Показывает аватарку и имя героя (кликабельно — открывает профиль)
- * - Отображает уровень, HP, серебро, золото, кристаллы
- * - Счётчик боёв (⚔️) с таймером регенерации
- * - Таймер активного похода (🗺️)
- * - Статус сохранения (💾)
- * - Уведомление о завершении похода
- * - Кнопка «Выйти»
- */
 import { SectionId } from "@/pages/Index";
 import { getAvatarEmoji } from "@/components/SectionPage";
 
@@ -28,7 +16,7 @@ function formatTimer(ms: number) {
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
   if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 interface GameHeaderProps {
@@ -52,71 +40,105 @@ export default function GameHeader({
   hero, currentHp, maxHp, silver, battles, regenTimer, campaignTimer,
   isCampaignActive, campaignNotice, onOpenSection, saveStatus = "idle", onLogout, avatarId = "m1", avatarImageUrl = "",
 }: GameHeaderProps) {
+  const sep = <span style={{ color: "rgba(255,220,100,0.4)", margin: "0 1px" }}>│</span>;
+
   return (
     <header className="game-header">
-      <div style={{ textAlign: "center", padding: "8px 0", borderBottom: "1px solid rgba(200,150,60,0.4)" }}>
+      {/* Название */}
+      <div style={{ textAlign: "center", padding: "6px 0 4px", borderBottom: "1px solid rgba(200,150,60,0.4)" }}>
         {campaignNotice && (
-          <div style={{ fontSize: 12, color: "#15803d", fontWeight: 600, marginBottom: 4, background: "#f0fdf4", padding: "4px 8px", borderRadius: 3 }}>
+          <div style={{ fontSize: 11, color: "#15803d", fontWeight: 600, marginBottom: 2, background: "#f0fdf4", padding: "2px 8px", borderRadius: 3 }}>
             {campaignNotice}
           </div>
         )}
         {saveStatus !== "idle" && (
-          <div style={{ fontSize: 10, color: saveStatus === "saved" ? "#15803d" : "#b45309", marginBottom: 2 }}>
+          <div style={{ fontSize: 10, color: saveStatus === "saved" ? "#15803d" : "#b45309", marginBottom: 1 }}>
             {saveStatus === "saving" ? "💾 сохранение..." : "✓ сохранено"}
           </div>
         )}
-        <h1 className="game-title" style={{ fontSize: 22, letterSpacing: "0.3em" }}>⚚Варвары⚚</h1>
+        <h1 className="game-title" style={{ fontSize: 20, letterSpacing: "0.3em", margin: 0 }}>⚚Варвары⚚</h1>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "8px 12px", justifyContent: "center" }}>
-        {/* Аватарка + имя — кликабельна */}
-        <div className="stat-badge rounded-[0.25rem]" onClick={() => onOpenSection("hero")} style={{ cursor: "pointer", gap: 5 }}>
-          <span style={{ fontSize: 18, lineHeight: 1, width: 22, height: 22, display: "inline-flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRadius: 4 }}>
+      {/* Одна строка со всеми параметрами */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 0,
+          padding: "5px 10px",
+          fontSize: 13,
+          fontWeight: 600,
+          color: "#f5e8b0",
+          lineHeight: 1.2,
+          rowGap: 3,
+        }}
+      >
+        {/* Аватарка + имя */}
+        <span
+          onClick={() => onOpenSection("hero")}
+          style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, marginRight: 4 }}
+        >
+          <span style={{ width: 18, height: 18, display: "inline-flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRadius: 3, flexShrink: 0 }}>
             {avatarImageUrl
-              ? <img src={avatarImageUrl} alt="avatar" style={{ width: 22, height: 22, objectFit: "cover", borderRadius: 3 }} />
-              : getAvatarEmoji(avatarId)
+              ? <img src={avatarImageUrl} alt="avatar" style={{ width: 18, height: 18, objectFit: "cover", borderRadius: 2 }} />
+              : <span style={{ fontSize: 14 }}>{getAvatarEmoji(avatarId)}</span>
             }
           </span>
-          <span style={{ fontWeight: 600 }}>{hero.name}</span>
-        </div>
-        <div className="stat-badge rounded-full">
-          <span>⭐</span>
-          <span>{hero.level} ур.</span>
-        </div>
-        <div className="stat-badge rounded-full" title={`${currentHp}/${maxHp} HP`}>
-          <span>❤️</span>
-          <span>{currentHp}/{maxHp}</span>
-        </div>
-        <div className="stat-badge rounded-3xl">
-          <span style={{ fontSize: 12 }}>🥈</span>
-          <span>{silver}</span>
-        </div>
-        <div className="stat-badge rounded-3xl">
-          <span style={{ fontSize: 12 }}></span>
-          <span>{hero.gold}</span>
-        </div>
-        <div className="stat-badge rounded-full">
-          <span>💎</span>
-          <span>{hero.gems}</span>
-        </div>
-        <div className="stat-badge rounded-full" style={{ gap: 5, alignItems: "center" }}>
-          <span>⚔️</span>
-          <span style={{ fontWeight: 600 }}>{battles}/{MAX_BATTLES}</span>
+          <span style={{ color: "#ffe89a" }}>{hero.name}</span>
+        </span>
+
+        {sep}
+
+        {/* Уровень */}
+        <span style={{ margin: "0 4px" }}>🎓 {hero.level}</span>
+
+        {sep}
+
+        {/* HP */}
+        <span style={{ margin: "0 4px" }}>❤️ {currentHp}/{maxHp}</span>
+
+        {sep}
+
+        {/* Серебро */}
+        <span style={{ margin: "0 4px" }}>🥈 {silver}</span>
+
+        {sep}
+
+        {/* Золото */}
+        <span style={{ margin: "0 4px" }}>🪙 {hero.gold}</span>
+
+        {sep}
+
+        {/* Кристаллы */}
+        <span style={{ margin: "0 4px" }}>💎 {hero.gems}</span>
+
+        {sep}
+
+        {/* Бои + таймер */}
+        <span style={{ margin: "0 4px", display: "inline-flex", alignItems: "center", gap: 3 }}>
+          ⚔️ {battles}/{MAX_BATTLES}
           {regenTimer !== null && battles < MAX_BATTLES && (
-            <span style={{ fontSize: 10, color: "#f0d080", marginLeft: 2 }}>+{formatTimerShort(regenTimer)}</span>
+            <span style={{ fontSize: 11, color: "#f0d080" }}>+{formatTimerShort(regenTimer)}</span>
           )}
-        </div>
-        {isCampaignActive && (
-          <div className="stat-badge" style={{ gap: 5 }}>
-            <span>🗺️</span>
-            <span style={{ fontWeight: 600 }}>{campaignTimer !== null ? formatTimer(campaignTimer) : "..."}</span>
-          </div>
+        </span>
+
+        {/* Поход */}
+        {isCampaignActive && campaignTimer !== null && (
+          <>
+            {sep}
+            <span style={{ margin: "0 4px" }}>🗺️ {formatTimer(campaignTimer)}</span>
+          </>
         )}
+
+        {/* Выйти */}
         {onLogout && (
-          <div className="stat-badge rounded-full" onClick={onLogout} style={{ cursor: "pointer", opacity: 0.7 }} title="Выйти">
-            <span style={{ fontSize: 12 }}>🚪</span>
-            <span style={{ fontSize: 11 }}>Выйти</span>
-          </div>
+          <>
+            {sep}
+            <span onClick={onLogout} style={{ cursor: "pointer", margin: "0 4px", opacity: 0.7, fontSize: 12 }} title="Выйти">
+              🚪
+            </span>
+          </>
         )}
       </div>
     </header>
