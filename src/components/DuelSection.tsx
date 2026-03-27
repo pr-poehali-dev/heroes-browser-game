@@ -335,8 +335,15 @@ export default function DuelSection({
           )}
         </div>
 
+        {/* Блокировка при низком HP */}
+        {player.hp < 100 && (
+          <div style={{ margin: "10px 14px", padding: "10px 12px", background: "#fff3cd", border: "1px solid #f0a500", borderRadius: 6, fontSize: 13, color: "#7a4f00", textAlign: "center" }}>
+            ❤️ Слишком мало здоровья для боя. Восстановись до <b>100 HP</b> (сейчас: {player.hp}).
+          </div>
+        )}
+
         {/* Категории */}
-        <div style={{ background: "#faf6e8" }}>
+        <div style={{ background: "#faf6e8", opacity: player.hp < 100 ? 0.45 : 1, pointerEvents: player.hp < 100 ? "none" : "auto" }}>
           {SEARCH_CATEGORIES.map((cat, i) => (
             <div
               key={cat.id}
