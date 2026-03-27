@@ -64,11 +64,11 @@ const SECTIONS = [
 
 // Стоимость прокачки: степенная формула cost = a * level^n
 const STAT_COST_COEFFS: Record<keyof HeroStats, { a: number; n: number }> = {
-  strength:  { a: 0.000344, n: 4.856 },
-  defense:   { a: 0.000631, n: 4.378 },
-  agility:   { a: 0.000588, n: 4.419 },
-  mastery:   { a: 0.000160, n: 5.283 },
-  vitality:  { a: 0.000419, n: 4.705 },
+  strength: { a: 0.000344, n: 4.856 },
+  defense: { a: 0.000631, n: 4.378 },
+  agility: { a: 0.000588, n: 4.419 },
+  mastery: { a: 0.00016, n: 5.283 },
+  vitality: { a: 0.000419, n: 4.705 },
 };
 const STAT_COST = (key: keyof HeroStats, level: number): number => {
   const c = STAT_COST_COEFFS[key];
@@ -387,7 +387,8 @@ export default function SectionPage({
   const [mineLocalDepth, setMineLocalDepth] = useState(1);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const HERO_SAVE_URL = "https://functions.poehali.dev/a540a07e-c67f-47e9-bb14-59ba436a93d8";
+  const HERO_SAVE_URL =
+    "https://functions.poehali.dev/a540a07e-c67f-47e9-bb14-59ba436a93d8";
 
   const getQuestProgress = (quest: QuestDef): number => {
     if (quest.type === "silver_earn") return totalSilverEarned;
@@ -646,7 +647,11 @@ export default function SectionPage({
             onViewProfile={onViewProfile}
             avatarId={avatarId}
             avatarImageUrl={avatarImageUrl}
-            userId={typeof window !== "undefined" ? (localStorage.getItem("heroes_user_id") || "") : ""}
+            userId={
+              typeof window !== "undefined"
+                ? localStorage.getItem("heroes_user_id") || ""
+                : ""
+            }
             key="duel"
           />
         );
@@ -697,11 +702,27 @@ export default function SectionPage({
 
         return (
           <div className="animate-fade-in">
-            <div style={{ textAlign: "center", borderBottom: "1px solid var(--parchment-border)", paddingBottom: 8, marginBottom: 12 }}>
-              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "var(--text-dark)" }}>
+            <div
+              style={{
+                textAlign: "center",
+                borderBottom: "1px solid var(--parchment-border)",
+                paddingBottom: 8,
+                marginBottom: 12,
+              }}
+            >
+              <h2
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: "var(--text-dark)",
+                }}
+              >
                 Тренировка
               </h2>
-              <p style={{ fontSize: 12, color: "var(--text-medium)" }}>🪙 {silver} серебра</p>
+              <p style={{ fontSize: 12, color: "var(--text-medium)" }}>
+                🪙 {silver} серебра
+              </p>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -711,40 +732,105 @@ export default function SectionPage({
                 const canAfford = silver >= cost;
                 const barPct = Math.min(100, (level / 50) * 100);
                 return (
-                  <div key={s.key} style={{
-                    display: "flex", gap: 14, padding: "14px 12px",
-                    borderBottom: i < STAT_DETAILS.length - 1 ? "1px solid #e2d9bc" : "none",
-                    background: "#faf6e8", alignItems: "flex-start",
-                  }}>
+                  <div
+                    key={s.key}
+                    style={{
+                      display: "flex",
+                      gap: 14,
+                      padding: "14px 12px",
+                      borderBottom:
+                        i < STAT_DETAILS.length - 1
+                          ? "1px solid #e2d9bc"
+                          : "none",
+                      background: "#faf6e8",
+                      alignItems: "flex-start",
+                    }}
+                  >
                     {/* Иконка */}
-                    <div style={{
-                      width: 52, height: 52, borderRadius: 8, background: s.iconBg,
-                      border: "1px solid #d0c090", display: "flex", alignItems: "center",
-                      justifyContent: "center", fontSize: 26, flexShrink: 0,
-                    }}>
+                    <div
+                      style={{
+                        width: 52,
+                        height: 52,
+                        borderRadius: 8,
+                        background: s.iconBg,
+                        border: "1px solid #d0c090",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 26,
+                        flexShrink: 0,
+                      }}
+                    >
                       {s.icon}
                     </div>
                     {/* Контент */}
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: "#2c1a0a", marginBottom: 2 }}>{s.label}</div>
-                      <div style={{ fontSize: 12, color: "#7a5c3a", marginBottom: 6, lineHeight: 1.4 }}>{s.desc}</div>
-                      {/* Прогресс-бар */}
-                      <div style={{ height: 6, background: "#d0c090", borderRadius: 3, overflow: "hidden", marginBottom: 4 }}>
-                        <div style={{ height: "100%", width: `${barPct}%`, background: s.barColor, borderRadius: 3 }} />
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 15,
+                          color: "#2c1a0a",
+                          marginBottom: 2,
+                        }}
+                      >
+                        {s.label}
                       </div>
-                      <div style={{ fontSize: 12, color: "#5a3a1a", marginBottom: 8 }}>
-                        Уровень: {level}&nbsp;&nbsp;·&nbsp;&nbsp;Цена улучшения: {cost} серебра
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#7a5c3a",
+                          marginBottom: 6,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {s.desc}
+                      </div>
+                      {/* Прогресс-бар */}
+                      <div
+                        style={{
+                          height: 6,
+                          background: "#d0c090",
+                          borderRadius: 3,
+                          overflow: "hidden",
+                          marginBottom: 4,
+                        }}
+                      >
+                        <div
+                          style={{
+                            height: "100%",
+                            width: `${barPct}%`,
+                            background: s.barColor,
+                            borderRadius: 3,
+                          }}
+                        />
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#5a3a1a",
+                          marginBottom: 8,
+                        }}
+                      >
+                        Уровень: {level}&nbsp;&nbsp;·&nbsp;&nbsp;Цена улучшения:{" "}
+                        {cost} серебра
                       </div>
                       <button
                         onClick={() => onUpgradeStat(s.key)}
                         disabled={!canAfford}
                         style={{
-                          padding: "5px 18px", borderRadius: 20, fontWeight: 700, fontSize: 13,
+                          padding: "5px 18px",
+                          borderRadius: 20,
+                          fontWeight: 700,
+                          fontSize: 13,
                           border: "2px solid #8b1a1a",
-                          background: canAfford ? "linear-gradient(180deg,#c0392b,#8b1a1a)" : "#ccc",
+                          background: canAfford
+                            ? "linear-gradient(180deg,#c0392b,#8b1a1a)"
+                            : "#ccc",
                           color: canAfford ? "#fff" : "#999",
                           cursor: canAfford ? "pointer" : "not-allowed",
-                          boxShadow: canAfford ? "0 2px 4px rgba(0,0,0,0.3)" : "none",
+                          boxShadow: canAfford
+                            ? "0 2px 4px rgba(0,0,0,0.3)"
+                            : "none",
                         }}
                       >
                         Улучшить
@@ -764,7 +850,12 @@ export default function SectionPage({
           { label: "Наставник", icon: "📚", action: "" },
           { label: "Анкета", icon: "📋", action: "" },
           { label: "Параметры", icon: "📊", action: "" },
-          { label: "Тренироваться", icon: "💪", action: "training", highlight: true },
+          {
+            label: "Тренироваться",
+            icon: "💪",
+            action: "training",
+            highlight: true,
+          },
           { label: "Экипировка", icon: "🗡️", action: "" },
           { label: "Ресурсы", icon: "💰", action: "" },
           { label: "Карма", icon: "☯️", action: "" },
@@ -777,38 +868,103 @@ export default function SectionPage({
         return (
           <div className="animate-fade-in">
             {/* Заголовок */}
-            <div style={{ textAlign: "center", borderBottom: "1px solid var(--parchment-border)", paddingBottom: 8, marginBottom: 0 }}>
-              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "var(--text-dark)", marginBottom: 2 }}></h2>
-              <p style={{ fontSize: 12, color: "var(--text-medium)" }}>Будь внимателен к себе!</p>
+            <div
+              style={{
+                textAlign: "center",
+                borderBottom: "1px solid var(--parchment-border)",
+                paddingBottom: 8,
+                marginBottom: 0,
+              }}
+            >
+              <h2
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: "var(--text-dark)",
+                  marginBottom: 2,
+                }}
+              ></h2>
+              <p style={{ fontSize: 12, color: "var(--text-medium)" }}>
+                Будь внимателен к себе!
+              </p>
             </div>
 
             {/* Аватар по центру */}
             <div style={{ textAlign: "center", padding: "16px 0 8px" }}>
               <div
-                style={{ position: "relative", display: "inline-block", cursor: "pointer" }}
+                style={{
+                  position: "relative",
+                  display: "inline-block",
+                  cursor: "pointer",
+                }}
                 onClick={() => fileInputRef.current?.click()}
                 title="Нажми чтобы загрузить фото"
               >
-                <div style={{
-                  width: 100, height: 100, borderRadius: 8,
-                  border: "3px solid var(--parchment-border)",
-                  background: "#2a1010",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 54, margin: "0 auto", overflow: "hidden",
-                }}>
-                  {avatarImageUrl
-                    ? <img src={avatarImageUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <span>{getAvatarEmoji(avatarId)}</span>
-                  }
+                <div
+                  style={{
+                    width: 200,
+                    height: 200,
+                    borderRadius: 8,
+                    border: "3px solid var(--parchment-border)",
+                    background: "#2a1010",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 54,
+                    margin: "0 auto",
+                    overflow: "hidden",
+                  }}
+                >
+                  {avatarImageUrl ? (
+                    <img
+                      src={avatarImageUrl}
+                      alt="avatar"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    <span>{getAvatarEmoji(avatarId)}</span>
+                  )}
                 </div>
                 {uploadingAvatar && (
-                  <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>⏳</div>
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "rgba(0,0,0,0.5)",
+                      borderRadius: 8,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 20,
+                    }}
+                  >
+                    ⏳
+                  </div>
                 )}
-                <div style={{
-                  position: "absolute", bottom: -4, right: -4, width: 24, height: 24, borderRadius: "50%",
-                  background: "var(--crimson)", color: "#fff", display: "flex", alignItems: "center",
-                  justifyContent: "center", fontSize: 13, border: "2px solid var(--parchment)",
-                }}>📷</div>
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: -4,
+                    right: -4,
+                    width: 24,
+                    height: 24,
+                    borderRadius: "50%",
+                    background: "var(--crimson)",
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 13,
+                    border: "2px solid var(--parchment)",
+                  }}
+                >
+                  📷
+                </div>
               </div>
               <input
                 ref={fileInputRef}
@@ -825,8 +981,13 @@ export default function SectionPage({
                     const uid = localStorage.getItem("heroes_user_id") ?? "";
                     const res = await fetch(HERO_SAVE_URL, {
                       method: "POST",
-                      headers: { "X-User-Id": uid, "Content-Type": "application/json" },
-                      body: JSON.stringify({ avatar_image: { data: base64, mime: file.type } }),
+                      headers: {
+                        "X-User-Id": uid,
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        avatar_image: { data: base64, mime: file.type },
+                      }),
                     });
                     const data = await res.json();
                     if (data.avatar_image_url) {
@@ -845,47 +1006,139 @@ export default function SectionPage({
                 <div
                   key={item.label}
                   onClick={() => {
-                    if (item.action === "training") onOpenSection("training" as SectionId);
-                    else if (item.action === "avatar_change") setShowAvatarPicker(true);
-                    else if (item.action === "profile_view") onViewProfile(hero.name, hero.level);
+                    if (item.action === "training")
+                      onOpenSection("training" as SectionId);
+                    else if (item.action === "avatar_change")
+                      setShowAvatarPicker(true);
+                    else if (item.action === "profile_view")
+                      onViewProfile(hero.name, hero.level);
                   }}
                   style={{
-                    display: "flex", alignItems: "center", gap: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
                     padding: "11px 16px",
-                    borderBottom: i < HERO_ITEMS.length - 1 ? "1px solid #e2d9bc" : "none",
+                    borderBottom:
+                      i < HERO_ITEMS.length - 1 ? "1px solid #e2d9bc" : "none",
                     background: item.highlight ? "#f5e8c8" : "#faf6e8",
                     cursor: item.action ? "pointer" : "default",
                     fontWeight: item.highlight ? 700 : 500,
                   }}
                 >
-                  <span style={{ fontSize: 17, width: 22, textAlign: "center" }}>{item.icon}</span>
-                  <span style={{ fontSize: 15, color: "var(--text-dark)" }}>{item.label}</span>
+                  <span
+                    style={{ fontSize: 17, width: 22, textAlign: "center" }}
+                  >
+                    {item.icon}
+                  </span>
+                  <span style={{ fontSize: 15, color: "var(--text-dark)" }}>
+                    {item.label}
+                  </span>
                 </div>
               ))}
             </div>
 
             {/* Выбор эмодзи-аватарки */}
             {showAvatarPicker && (
-              <div className="game-panel-inner" style={{ borderRadius: 6, padding: "12px 14px", marginTop: 10, border: "2px solid var(--parchment-border)" }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-dark)", marginBottom: 8 }}>Мужские:</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 6, marginBottom: 10 }}>
+              <div
+                className="game-panel-inner"
+                style={{
+                  borderRadius: 6,
+                  padding: "12px 14px",
+                  marginTop: 10,
+                  border: "2px solid var(--parchment-border)",
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 13,
+                    color: "var(--text-dark)",
+                    marginBottom: 8,
+                  }}
+                >
+                  Мужские:
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(6, 1fr)",
+                    gap: 6,
+                    marginBottom: 10,
+                  }}
+                >
                   {MALE_AVATARS.map((av) => (
-                    <button key={av.id} onClick={() => { onChangeAvatar(av.id); setShowAvatarPicker(false); }}
-                      style={{ padding: "8px 4px", borderRadius: 6, border: `2px solid ${avatarId === av.id ? "var(--crimson)" : "var(--parchment-border)"}`, background: avatarId === av.id ? "#fff5f0" : "#faf6e8", cursor: "pointer", fontSize: 22 }} title={av.label}>
+                    <button
+                      key={av.id}
+                      onClick={() => {
+                        onChangeAvatar(av.id);
+                        setShowAvatarPicker(false);
+                      }}
+                      style={{
+                        padding: "8px 4px",
+                        borderRadius: 6,
+                        border: `2px solid ${avatarId === av.id ? "var(--crimson)" : "var(--parchment-border)"}`,
+                        background: avatarId === av.id ? "#fff5f0" : "#faf6e8",
+                        cursor: "pointer",
+                        fontSize: 22,
+                      }}
+                      title={av.label}
+                    >
                       {av.emoji}
                     </button>
                   ))}
                 </div>
-                <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-dark)", marginBottom: 8 }}>Женские:</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 6, marginBottom: 8 }}>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 13,
+                    color: "var(--text-dark)",
+                    marginBottom: 8,
+                  }}
+                >
+                  Женские:
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(6, 1fr)",
+                    gap: 6,
+                    marginBottom: 8,
+                  }}
+                >
                   {FEMALE_AVATARS.map((av) => (
-                    <button key={av.id} onClick={() => { onChangeAvatar(av.id); setShowAvatarPicker(false); }}
-                      style={{ padding: "8px 4px", borderRadius: 6, border: `2px solid ${avatarId === av.id ? "var(--crimson)" : "var(--parchment-border)"}`, background: avatarId === av.id ? "#fff5f0" : "#faf6e8", cursor: "pointer", fontSize: 22 }} title={av.label}>
+                    <button
+                      key={av.id}
+                      onClick={() => {
+                        onChangeAvatar(av.id);
+                        setShowAvatarPicker(false);
+                      }}
+                      style={{
+                        padding: "8px 4px",
+                        borderRadius: 6,
+                        border: `2px solid ${avatarId === av.id ? "var(--crimson)" : "var(--parchment-border)"}`,
+                        background: avatarId === av.id ? "#fff5f0" : "#faf6e8",
+                        cursor: "pointer",
+                        fontSize: 22,
+                      }}
+                      title={av.label}
+                    >
                       {av.emoji}
                     </button>
                   ))}
                 </div>
-                <button onClick={() => setShowAvatarPicker(false)} style={{ width: "100%", padding: "6px", borderRadius: 3, border: "1px solid var(--parchment-border)", background: "#f0e8d0", fontSize: 12, cursor: "pointer", color: "var(--text-dark)" }}>
+                <button
+                  onClick={() => setShowAvatarPicker(false)}
+                  style={{
+                    width: "100%",
+                    padding: "6px",
+                    borderRadius: 3,
+                    border: "1px solid var(--parchment-border)",
+                    background: "#f0e8d0",
+                    fontSize: 12,
+                    cursor: "pointer",
+                    color: "var(--text-dark)",
+                  }}
+                >
                   Закрыть
                 </button>
               </div>
@@ -1714,48 +1967,144 @@ export default function SectionPage({
 
       case "mercenaries": {
         const MERCENARY_TYPES = [
-          { id: "scout", name: "Лазутчик", icon: "🗡️", desc: "Быстрый и незаметный боец. Отличный разведчик.", cost: 200, bonus: "Разведка +15%" },
-          { id: "knight", name: "Рыцарь", icon: "🛡️", desc: "Тяжёлый воин с высокой защитой.", cost: 400, bonus: "Защита +20%" },
-          { id: "archer", name: "Лучник", icon: "🏹", desc: "Дальнобойный боец, атакует из укрытия.", cost: 300, bonus: "Атака +15%" },
-          { id: "mage", name: "Маг", icon: "🔮", desc: "Владеет тайными силами. Мощные заклинания.", cost: 500, bonus: "Магия +25%" },
+          {
+            id: "scout",
+            name: "Лазутчик",
+            icon: "🗡️",
+            desc: "Быстрый и незаметный боец. Отличный разведчик.",
+            cost: 200,
+            bonus: "Разведка +15%",
+          },
+          {
+            id: "knight",
+            name: "Рыцарь",
+            icon: "🛡️",
+            desc: "Тяжёлый воин с высокой защитой.",
+            cost: 400,
+            bonus: "Защита +20%",
+          },
+          {
+            id: "archer",
+            name: "Лучник",
+            icon: "🏹",
+            desc: "Дальнобойный боец, атакует из укрытия.",
+            cost: 300,
+            bonus: "Атака +15%",
+          },
+          {
+            id: "mage",
+            name: "Маг",
+            icon: "🔮",
+            desc: "Владеет тайными силами. Мощные заклинания.",
+            cost: 500,
+            bonus: "Магия +25%",
+          },
         ];
         return (
           <div className="animate-fade-in">
-            <div style={{ textAlign: "center", borderBottom: "1px solid var(--parchment-border)", paddingBottom: 8, marginBottom: 12 }}>
-              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "var(--text-dark)" }}>
+            <div
+              style={{
+                textAlign: "center",
+                borderBottom: "1px solid var(--parchment-border)",
+                paddingBottom: 8,
+                marginBottom: 12,
+              }}
+            >
+              <h2
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: "var(--text-dark)",
+                }}
+              >
                 Наёмники
               </h2>
-              <p style={{ fontSize: 12, color: "var(--text-medium)" }}>Нанимай бойцов для походов и битв</p>
+              <p style={{ fontSize: 12, color: "var(--text-medium)" }}>
+                Нанимай бойцов для походов и битв
+              </p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
               {MERCENARY_TYPES.map((m, i) => {
                 const canAfford = silver >= m.cost;
                 return (
-                  <div key={m.id} style={{
-                    display: "flex", gap: 14, padding: "14px 12px",
-                    borderBottom: i < MERCENARY_TYPES.length - 1 ? "1px solid #e2d9bc" : "none",
-                    background: "#faf6e8", alignItems: "flex-start",
-                  }}>
-                    <div style={{
-                      width: 52, height: 52, borderRadius: 8, background: "#f0e8d0",
-                      border: "1px solid #d0c090", display: "flex", alignItems: "center",
-                      justifyContent: "center", fontSize: 28, flexShrink: 0,
-                    }}>
+                  <div
+                    key={m.id}
+                    style={{
+                      display: "flex",
+                      gap: 14,
+                      padding: "14px 12px",
+                      borderBottom:
+                        i < MERCENARY_TYPES.length - 1
+                          ? "1px solid #e2d9bc"
+                          : "none",
+                      background: "#faf6e8",
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 52,
+                        height: 52,
+                        borderRadius: 8,
+                        background: "#f0e8d0",
+                        border: "1px solid #d0c090",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 28,
+                        flexShrink: 0,
+                      }}
+                    >
                       {m.icon}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: "#2c1a0a", marginBottom: 2 }}>{m.name}</div>
-                      <div style={{ fontSize: 12, color: "#7a5c3a", marginBottom: 4, lineHeight: 1.4 }}>{m.desc}</div>
-                      <div style={{ fontSize: 11, color: "#8b6914", fontWeight: 600, marginBottom: 8 }}>+{m.bonus}</div>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 15,
+                          color: "#2c1a0a",
+                          marginBottom: 2,
+                        }}
+                      >
+                        {m.name}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#7a5c3a",
+                          marginBottom: 4,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {m.desc}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "#8b6914",
+                          fontWeight: 600,
+                          marginBottom: 8,
+                        }}
+                      >
+                        +{m.bonus}
+                      </div>
                       <button
                         disabled={!canAfford}
                         style={{
-                          padding: "5px 18px", borderRadius: 20, fontWeight: 700, fontSize: 13,
+                          padding: "5px 18px",
+                          borderRadius: 20,
+                          fontWeight: 700,
+                          fontSize: 13,
                           border: "2px solid #8b1a1a",
-                          background: canAfford ? "linear-gradient(180deg,#c0392b,#8b1a1a)" : "#ccc",
+                          background: canAfford
+                            ? "linear-gradient(180deg,#c0392b,#8b1a1a)"
+                            : "#ccc",
                           color: canAfford ? "#fff" : "#999",
                           cursor: canAfford ? "pointer" : "not-allowed",
-                          boxShadow: canAfford ? "0 2px 4px rgba(0,0,0,0.3)" : "none",
+                          boxShadow: canAfford
+                            ? "0 2px 4px rgba(0,0,0,0.3)"
+                            : "none",
                         }}
                       >
                         Нанять ({m.cost} 🪙)
