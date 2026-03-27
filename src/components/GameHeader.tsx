@@ -40,7 +40,7 @@ export default function GameHeader({
   hero, currentHp, maxHp, silver, battles, regenTimer, campaignTimer,
   isCampaignActive, campaignNotice, onOpenSection, saveStatus = "idle", onLogout, avatarId = "m1", avatarImageUrl = "",
 }: GameHeaderProps) {
-  const sep = <span style={{ color: "rgba(255,220,100,0.4)", margin: "0 1px" }}>│</span>;
+  const sep = <span style={{ color: "rgba(255,220,100,0.4)", margin: "0 1px" }}></span>;
 
   return (
     <header className="game-header">
@@ -82,7 +82,7 @@ export default function GameHeader({
           <span style={{ width: 18, height: 18, display: "inline-flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRadius: 3, flexShrink: 0 }}>
             {avatarImageUrl
               ? <img src={avatarImageUrl} alt="avatar" style={{ width: 18, height: 18, objectFit: "cover", borderRadius: 2 }} />
-              : <span style={{ fontSize: 14 }}>{getAvatarEmoji(avatarId)}</span>
+              : <span style={{ fontSize: 14 }}>🎓</span>
             }
           </span>
           <span style={{ color: "#ffe89a" }}>{hero.name}</span>
