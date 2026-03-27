@@ -773,9 +773,7 @@ export default function SectionPage({
           <div className="animate-fade-in">
             {/* Заголовок */}
             <div style={{ textAlign: "center", borderBottom: "1px solid var(--parchment-border)", paddingBottom: 8, marginBottom: 0 }}>
-              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "var(--text-dark)", marginBottom: 2 }}>
-                Герой
-              </h2>
+              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "var(--text-dark)", marginBottom: 2 }}></h2>
               <p style={{ fontSize: 12, color: "var(--text-medium)" }}>Будь внимателен к себе!</p>
             </div>
 
