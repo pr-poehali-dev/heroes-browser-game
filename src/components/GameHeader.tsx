@@ -72,6 +72,7 @@ export default function GameHeader({
           color: "#f5e8b0",
           lineHeight: 1.2,
           rowGap: 3,
+          justifyContent: "center",
         }}
       >
         {/* Аватарка + имя */}
