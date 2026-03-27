@@ -471,11 +471,8 @@ export default function Index() {
       let newHp = 0;
       let forcedDefeat = false;
       setCurrentHp((prev) => {
-        newHp = Math.max(0, prev - damageTaken);
-        if (newHp <= 40) {
-          forcedDefeat = true;
-          newHp = Math.max(0, newHp);
-        }
+        newHp = Math.max(40, prev - damageTaken);
+        if (prev - damageTaken < 40) forcedDefeat = true;
         return newHp;
       });
 
