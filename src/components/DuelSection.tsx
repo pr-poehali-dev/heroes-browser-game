@@ -100,9 +100,20 @@ function calcDamage(atk: number, def: number, spd: number, eSPD: number): { dmg:
   return { dmg: Math.round(isCrit ? raw * 1.8 : raw), isCrit, isMiss: false };
 }
 
-function simulateBattle(player: Fighter, enemy: Fighter): { logs: BattleLog[]; winner: "player" | "enemy" } {
+interface BattleResult {
+  logs: BattleLog[];
+  winner: "player" | "enemy";
+  finalPHp: number;
+  finalEHp: number;
+  totalPlayerDmg: number;
+  totalEnemyDmg: number;
+}
+
+function simulateBattle(player: Fighter, enemy: Fighter): BattleResult {
   let pHp = player.hp;
   let eHp = enemy.hp;
+  let totalPlayerDmg = 0;
+  let totalEnemyDmg = 0;
   const logs: BattleLog[] = [];
   let id = 0;
   const addLog = (entry: Omit<BattleLog, "id">) => { logs.push({ ...entry, id: ++id }); };
@@ -121,6 +132,7 @@ function simulateBattle(player: Fighter, enemy: Fighter): { logs: BattleLog[]; w
           addLog({ turn, actor: "player", type: "miss", text: `${player.name} промахнулся!` });
         } else {
           eHp = Math.max(0, eHp - dmg);
+          totalPlayerDmg += dmg;
           addLog({ turn, actor: "player", type: isCrit ? "crit" : "attack", text: `🗡️ ${player.name} наносит ${dmg} урона!${isCrit ? " 💥 КРИТ!" : ""}`, damage: dmg });
           if (eHp <= 0) { addLog({ turn, actor: "system", type: "system", text: `🏆 ${player.name} побеждает!` }); break; }
         }
@@ -133,6 +145,7 @@ function simulateBattle(player: Fighter, enemy: Fighter): { logs: BattleLog[]; w
           addLog({ turn, actor: "enemy", type: "miss", text: `${enemy.name} промахнулся!` });
         } else {
           pHp = Math.max(0, pHp - dmg);
+          totalEnemyDmg += dmg;
           addLog({ turn, actor: "enemy", type: isCrit ? "crit" : "attack", text: `${enemy.avatar} ${enemy.name} наносит ${dmg} урона!${isCrit ? " 💥 КРИТ!" : ""}`, damage: dmg });
           if (pHp <= 0) { addLog({ turn, actor: "system", type: "system", text: `💀 ${player.name} повержен...` }); break; }
         }
@@ -140,7 +153,7 @@ function simulateBattle(player: Fighter, enemy: Fighter): { logs: BattleLog[]; w
     }
     if (pHp <= 0 || eHp <= 0) break;
   }
-  return { logs, winner: pHp > eHp ? "player" : "enemy" };
+  return { logs, winner: pHp > eHp ? "player" : "enemy", finalPHp: pHp, finalEHp: eHp, totalPlayerDmg, totalEnemyDmg };
 }
 
 function hpBar(hp: number, maxHp: number, color = "#c0392b") {
@@ -186,6 +199,8 @@ export default function DuelSection({
   const [logs, setLogs] = useState<BattleLog[]>([]);
   const [winner, setWinner] = useState<"player" | "enemy" | null>(null);
   const [reward, setReward] = useState<DuelReward>({ xp: 0, gold: 0, silver: 0, glory: 0 });
+  const [battleStats, setBattleStats] = useState<{ finalPHp: number; finalEHp: number; totalPlayerDmg: number; totalEnemyDmg: number } | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -270,9 +285,11 @@ export default function DuelSection({
   const fight = () => {
     if (!selectedEnemy) return;
     if (!onSpendBattle()) return;
-    const { logs: battleLogs, winner: w } = simulateBattle(player, selectedEnemy);
+    const { logs: battleLogs, winner: w, finalPHp, finalEHp, totalPlayerDmg, totalEnemyDmg } = simulateBattle(player, selectedEnemy);
     setLogs(battleLogs);
     setWinner(w);
+    setBattleStats({ finalPHp, finalEHp, totalPlayerDmg, totalEnemyDmg });
+    setShowDetails(false);
     setScreen("result");
     if (w === "player") {
       const r: DuelReward = { xp: rnd(1, 2), gold: 0, silver: rnd(15, 50), glory: 1 };
@@ -509,51 +526,101 @@ export default function DuelSection({
 
   // ── ЭКРАН 4: Результат ────────────────────────────────────────────────────
   if (screen === "result") {
+    const isWin = winner === "player";
+    const rowStyle: React.CSSProperties = {
+      display: "flex", justifyContent: "space-between",
+      fontSize: 13, padding: "2px 0", color: "var(--text-dark)",
+    };
+    const labelStyle: React.CSSProperties = { color: "var(--text-medium)", marginRight: 8 };
     return (
-      <div className="animate-fade-in">
-        <div style={{ textAlign: "center", padding: "8px 0 12px" }}>
-          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "var(--text-dark)" }}>
-            Дуэль
-          </h2>
+      <div className="animate-fade-in" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+        {/* Заголовок */}
+        <div style={{ textAlign: "center", padding: "10px 0 12px", borderBottom: "1px solid var(--parchment-border)", marginBottom: 10 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-dark)", margin: 0 }}>Итог боя</h2>
         </div>
 
-        {/* Лог боя */}
-        <div className="game-panel-inner" style={{ borderRadius: 4, padding: "8px 10px", marginBottom: 12, maxHeight: 280, overflowY: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
-          {logs.map((log) => {
-            const { bg, border, color } = logStyle(log);
-            return (
-              <div key={log.id} style={{ fontSize: 12, padding: "4px 8px", borderRadius: 3, background: bg, border: `1px solid ${border}`, color, lineHeight: 1.5 }}>
-                {log.turn > 0 && <span style={{ opacity: 0.5, fontSize: 10, marginRight: 4 }}>Ход {log.turn}.</span>}
-                {log.text}
-              </div>
-            );
-          })}
-          <div ref={logsEndRef} />
-        </div>
-
-        {/* Результат */}
-        {winner === "player" ? (
-          <div style={{ textAlign: "center", padding: "14px", background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", border: "2px solid #4ade80", borderRadius: 6, marginBottom: 12 }}>
-            <div style={{ fontSize: 32, marginBottom: 6 }}>🏆</div>
-            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: "#15803d", marginBottom: 4 }}>Победа!</div>
-            <div style={{ fontSize: 13, color: "#166534" }}>
-              {reward.glory > 0 && <>{reward.glory} ⭐ · </>}
-              {reward.xp > 0 && <>{reward.xp} опыта · </>}
-              {reward.silver > 0 && <>{reward.silver} серебра</>}
+        {/* Победа / Поражение */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: isWin ? "#2a6a1a" : "#9b1c1c", marginBottom: 3 }}>
+            {isWin ? "Ты победил" : "Ты проиграл"}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--text-medium)", marginBottom: isWin ? 6 : 0 }}>
+            Причина — {isWin ? "Победитель нанес больше суммарного урона" : "Противник нанес больше суммарного урона"}
+          </div>
+          {isWin && reward && (
+            <div style={{ fontSize: 13, color: "var(--text-dark)" }}>
+              {reward.xp > 0 && <div style={rowStyle}><span>Опыт 🎓</span><span>{reward.xp}</span></div>}
+              {reward.silver > 0 && <div style={rowStyle}><span>Серебро 💰</span><span>{reward.silver}</span></div>}
+              {reward.glory > 0 && <div style={rowStyle}><span>Слава 🌟</span><span>{reward.glory}</span></div>}
             </div>
-          </div>
-        ) : (
-          <div style={{ textAlign: "center", padding: "14px", background: "linear-gradient(135deg,#fff5f5,#fce4ec)", border: "2px solid #ef9a9a", borderRadius: 6, marginBottom: 12 }}>
-            <div style={{ fontSize: 32, marginBottom: 6 }}>💀</div>
-            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: "#9b1c1c", marginBottom: 4 }}>Поражение...</div>
-          </div>
+          )}
+        </div>
+
+        <div style={{ borderTop: "1px solid var(--parchment-border)", margin: "8px 0" }} />
+
+        {/* Нанесённый урон */}
+        {battleStats && (
+          <>
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-dark)", marginBottom: 4 }}>Нанесенный урон:</div>
+              <div style={rowStyle}>
+                <span style={labelStyle}>{player.name}:</span>
+                <span>{battleStats.totalPlayerDmg}</span>
+              </div>
+              <div style={rowStyle}>
+                <span style={labelStyle}>{selectedEnemy?.name}:</span>
+                <span>{battleStats.totalEnemyDmg}</span>
+              </div>
+            </div>
+
+            <div style={{ borderTop: "1px solid var(--parchment-border)", margin: "8px 0" }} />
+
+            {/* Остаток здоровья */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-dark)", marginBottom: 4 }}>Осталось здоровья:</div>
+              <div style={rowStyle}>
+                <span style={labelStyle}>{player.name}:</span>
+                <span style={{ color: battleStats.finalPHp > 0 ? "#2a6a1a" : "#9b1c1c" }}>{battleStats.finalPHp}</span>
+              </div>
+              <div style={rowStyle}>
+                <span style={labelStyle}>{selectedEnemy?.name}:</span>
+                <span style={{ color: battleStats.finalEHp > 0 ? "#2a6a1a" : "#9b1c1c" }}>{battleStats.finalEHp}</span>
+              </div>
+            </div>
+          </>
         )}
 
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => { setScreen("fight"); setLogs([]); setWinner(null); }} style={{ flex: 1, padding: "10px", borderRadius: 4, fontWeight: 700, fontSize: 14, background: "var(--crimson)", color: "var(--parchment)", border: "none", cursor: "pointer" }}>
-            ⚔️ Снова в бой
+        {/* Детали (логи) — сворачиваемый блок */}
+        <div style={{ borderTop: "1px solid var(--parchment-border)", marginBottom: 10 }}>
+          <button
+            onClick={() => setShowDetails((v) => !v)}
+            style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: "8px 0", fontSize: 13, color: "var(--text-dark)", fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <span style={{ fontSize: 12, opacity: 0.6 }}>{showDetails ? "▲" : "▼"}</span>
+            Детали
           </button>
-          <button onClick={() => setScreen("search")} style={{ flex: 1, padding: "10px", borderRadius: 4, fontWeight: 600, fontSize: 13, background: "#f5f0e0", color: "var(--text-dark)", border: "1px solid var(--parchment-border)", cursor: "pointer" }}>
+          {showDetails && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 3, maxHeight: 220, overflowY: "auto", paddingBottom: 4 }}>
+              {logs.map((log) => {
+                const { bg, border, color } = logStyle(log);
+                return (
+                  <div key={log.id} style={{ fontSize: 11, padding: "3px 7px", borderRadius: 3, background: bg, border: `1px solid ${border}`, color, lineHeight: 1.4, fontFamily: "sans-serif" }}>
+                    {log.turn > 0 && <span style={{ opacity: 0.5, fontSize: 10, marginRight: 4 }}>Ход {log.turn}.</span>}
+                    {log.text}
+                  </div>
+                );
+              })}
+              <div ref={logsEndRef} />
+            </div>
+          )}
+        </div>
+
+        {/* Кнопки */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => { setScreen("fight"); setLogs([]); setWinner(null); setBattleStats(null); }} style={{ flex: 1, padding: "10px", borderRadius: 4, fontWeight: 700, fontSize: 14, background: "var(--crimson)", color: "var(--parchment)", border: "none", cursor: "pointer", fontFamily: "'Cormorant Garamond', serif" }}>
+            ⚔️ Следующий
+          </button>
+          <button onClick={() => setScreen("search")} style={{ flex: 1, padding: "10px", borderRadius: 4, fontWeight: 600, fontSize: 13, background: "#f5f0e0", color: "var(--text-dark)", border: "1px solid var(--parchment-border)", cursor: "pointer", fontFamily: "'Cormorant Garamond', serif" }}>
             Другой противник
           </button>
         </div>
