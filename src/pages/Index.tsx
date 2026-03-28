@@ -451,8 +451,12 @@ export default function Index() {
 
   const spendBattle = useCallback(() => {
     if (battles <= 0) return false;
-    const spentAt = Date.now();
-    const newQueue = [...regenQueue.current, spentAt];
+    const now = Date.now();
+    const prev = regenQueue.current;
+    // Каждый бой начинает накапливаться строго через REGEN_MS после предыдущего
+    const lastStart = prev.length > 0 ? prev[prev.length - 1] : now - REGEN_MS;
+    const spentAt = Math.max(now, lastStart + REGEN_MS);
+    const newQueue = [...prev, spentAt];
     regenQueue.current = newQueue;
     setRegenQueueState(newQueue);
     setBattles((b) => {
