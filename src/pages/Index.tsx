@@ -267,16 +267,17 @@ export default function Index() {
         const savedQueue: number[] = Array.isArray(h.battles_regen_queue)
           ? h.battles_regen_queue.map((t: number) => Number(t))
           : [];
+        const loadedBattles = h.battles ?? MAX_BATTLES;
         if (savedQueue.length > 0) {
           const now = Date.now();
-          // Отфильтровываем уже сгенерировавшиеся слоты (прошло REGEN_MS с момента траты)
           const stillPending = savedQueue.filter((t) => t + REGEN_MS > now);
           const regenedOffline = savedQueue.length - stillPending.length;
-          const loadedBattles = h.battles ?? MAX_BATTLES;
           const newBattles = Math.min(MAX_BATTLES, loadedBattles + regenedOffline);
           setBattles(newBattles);
           regenQueue.current = stillPending;
           setRegenQueueState(stillPending);
+        } else {
+          setBattles(loadedBattles);
         }
         loadedRef.current = true;
       })
