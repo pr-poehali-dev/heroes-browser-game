@@ -71,7 +71,7 @@ def handler(event: dict, context) -> dict:
             SELECT name, level, xp, xp_next, hp, max_hp, gold, silver, gems, glory,
                    attack, defense, magic, speed,
                    stat_strength, stat_defense, stat_agility, stat_mastery, stat_vitality,
-                   battles, battles_last_regen_at, campaign_end_at, campaign_reward,
+                   battles, battles_last_regen_at, battles_regen_queue, campaign_end_at, campaign_reward,
                    location, quest_progress, quest_claimed, total_silver_earned,
                    duel_wins, duel_losses, campaign_count, campaign_minutes_total,
                    campaign_minutes, campaign_used_minutes_today, campaign_day,
@@ -93,7 +93,7 @@ def handler(event: dict, context) -> dict:
             "name", "level", "xp", "xp_next", "hp", "max_hp", "gold", "silver", "gems", "glory",
             "attack", "defense", "magic", "speed",
             "stat_strength", "stat_defense", "stat_agility", "stat_mastery", "stat_vitality",
-            "battles", "battles_last_regen_at", "campaign_end_at", "campaign_reward",
+            "battles", "battles_last_regen_at", "battles_regen_queue", "campaign_end_at", "campaign_reward",
             "location", "quest_progress", "quest_claimed", "total_silver_earned",
             "duel_wins", "duel_losses", "campaign_count", "campaign_minutes_total",
             "campaign_minutes", "campaign_used_minutes_today", "campaign_day",
@@ -159,6 +159,10 @@ def handler(event: dict, context) -> dict:
         stat_vitality = int(h.get("stat_vitality", 5))
         battles = int(h.get("battles", 6))
         blr = ts_lit(h.get("battles_last_regen_at"))
+        regen_queue_raw = h.get("battles_regen_queue", [])
+        if not isinstance(regen_queue_raw, list):
+            regen_queue_raw = []
+        battles_regen_queue = esc(json.dumps(regen_queue_raw))
         cea = ts_lit(h.get("campaign_end_at"))
         campaign_reward = int(h.get("campaign_reward", 0))
         location = esc(h.get("location", "Поселок"))
@@ -187,7 +191,7 @@ def handler(event: dict, context) -> dict:
                 user_id, name, level, xp, xp_next, hp, max_hp, gold, silver, gems, glory,
                 attack, defense, magic, speed,
                 stat_strength, stat_defense, stat_agility, stat_mastery, stat_vitality,
-                battles, battles_last_regen_at, campaign_end_at, campaign_reward,
+                battles, battles_last_regen_at, battles_regen_queue, campaign_end_at, campaign_reward,
                 location, quest_progress, quest_claimed, total_silver_earned,
                 duel_wins, duel_losses, campaign_count, campaign_minutes_total,
                 campaign_minutes, campaign_used_minutes_today, campaign_day,
@@ -197,7 +201,7 @@ def handler(event: dict, context) -> dict:
                 {gold}, {silver}, {gems}, {glory},
                 {attack}, {defense}, {magic}, {speed},
                 {stat_strength}, {stat_defense}, {stat_agility}, {stat_mastery}, {stat_vitality},
-                {battles}, {blr}, {cea}, {campaign_reward},
+                {battles}, {blr}, '{battles_regen_queue}'::jsonb, {cea}, {campaign_reward},
                 '{location}', '{quest_progress}'::jsonb, '{quest_claimed}'::jsonb,
                 {total_silver_earned},
                 {duel_wins}, {duel_losses}, {campaign_count}, {campaign_minutes_total},
@@ -214,6 +218,7 @@ def handler(event: dict, context) -> dict:
                 stat_agility = EXCLUDED.stat_agility, stat_mastery = EXCLUDED.stat_mastery,
                 stat_vitality = EXCLUDED.stat_vitality, battles = EXCLUDED.battles,
                 battles_last_regen_at = EXCLUDED.battles_last_regen_at,
+                battles_regen_queue = EXCLUDED.battles_regen_queue,
                 campaign_end_at = EXCLUDED.campaign_end_at,
                 campaign_reward = EXCLUDED.campaign_reward, location = EXCLUDED.location,
                 quest_progress = EXCLUDED.quest_progress, quest_claimed = EXCLUDED.quest_claimed,

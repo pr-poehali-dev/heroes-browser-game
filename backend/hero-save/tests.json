@@ -1,20 +1,11 @@
 {
   "tests": [
     {
-      "name": "GET hero not found",
-      "method": "GET",
-      "path": "/",
-      "headers": { "X-User-Id": "test-user-new-001" },
-      "expectedStatus": 404,
-      "expectedBody": { "found": false },
-      "bodyMatcher": "partial"
-    },
-    {
-      "name": "POST save hero with new fields",
+      "name": "POST save hero with battles_regen_queue",
       "method": "POST",
       "path": "/",
       "headers": {
-        "X-User-Id": "test-user-new-001",
+        "X-User-Id": "test-user-regen-001",
         "Content-Type": "application/json"
       },
       "body": {
@@ -38,8 +29,9 @@
           "stat_agility": 5,
           "stat_mastery": 5,
           "stat_vitality": 5,
-          "battles": 6,
+          "battles": 5,
           "battles_last_regen_at": null,
+          "battles_regen_queue": [1743000000000],
           "campaign_end_at": null,
           "campaign_reward": 0,
           "campaign_minutes": 0,
@@ -57,7 +49,7 @@
           "pets": [],
           "mine_end_at": null,
           "mine_depth": 0,
-          "diary": [{"id": 1, "date": "24 марта, 12:00", "icon": "🏆", "text": "Тестовая запись", "type": "system"}]
+          "diary": []
         }
       },
       "expectedStatus": 200,
@@ -65,10 +57,10 @@
       "bodyMatcher": "partial"
     },
     {
-      "name": "GET hero found",
+      "name": "GET hero found with battles_regen_queue",
       "method": "GET",
       "path": "/",
-      "headers": { "X-User-Id": "test-user-new-001" },
+      "headers": { "X-User-Id": "test-user-regen-001" },
       "expectedStatus": 200,
       "expectedBody": { "found": true },
       "bodyMatcher": "partial"

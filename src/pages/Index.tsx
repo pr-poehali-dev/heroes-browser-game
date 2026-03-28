@@ -185,6 +185,8 @@ export default function Index() {
   const regenQueue = useRef<number[]>([]);
   const [regenTimer, setRegenTimer] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const triggerSaveRef = useRef<((payload: object) => void) | null>(null);
+  const buildPayloadRef = useRef<((overrides?: Partial<Record<string, unknown>>) => object) | null>(null);
 
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const diaryIdRef = useRef(10);
@@ -265,23 +267,18 @@ export default function Index() {
         }
 
         // Восстанавливаем очередь регенерации боёв после перезагрузки
-        const loadedBattles = h.battles ?? MAX_BATTLES;
-        const spent = MAX_BATTLES - loadedBattles;
-        if (spent > 0 && h.battles_last_regen_at) {
-          const lastRegenTime = new Date(h.battles_last_regen_at).getTime();
+        const savedQueue: number[] = Array.isArray(h.battles_regen_queue)
+          ? h.battles_regen_queue.map((t: number) => Number(t))
+          : [];
+        if (savedQueue.length > 0) {
           const now = Date.now();
-          const elapsed = now - lastRegenTime;
-          const regenedOffline = Math.floor(elapsed / REGEN_MS);
-          const stillSpent = Math.max(0, spent - regenedOffline);
+          // Отфильтровываем уже сгенерировавшиеся слоты (прошло REGEN_MS с момента траты)
+          const stillPending = savedQueue.filter((t) => t + REGEN_MS > now);
+          const regenedOffline = savedQueue.length - stillPending.length;
+          const loadedBattles = h.battles ?? MAX_BATTLES;
           const newBattles = Math.min(MAX_BATTLES, loadedBattles + regenedOffline);
           setBattles(newBattles);
-          if (stillSpent > 0) {
-            const queue: number[] = [];
-            for (let i = 0; i < stillSpent; i++) {
-              queue.push(lastRegenTime + i * REGEN_MS);
-            }
-            regenQueue.current = queue;
-          }
+          regenQueue.current = stillPending;
         }
         loadedRef.current = true;
       })
@@ -329,6 +326,7 @@ export default function Index() {
       stat_vitality: stats.vitality,
       battles,
       battles_last_regen_at: null,
+      battles_regen_queue: regenQueue.current,
       campaign_end_at: campaignEnd ? new Date(campaignEnd).toISOString() : null,
       campaign_reward: campaignReward,
       campaign_minutes: campaignMinutes,
@@ -351,6 +349,10 @@ export default function Index() {
     }),
     [hero, xp, currentHp, maxHp, silver, glory, stats, battles, campaignEnd, campaignReward, campaignMinutes, campaignUsedMinutesToday, campaignCount, campaignMinutesTotal, questProgress, questClaimed, totalSilverEarned, duelWins, duelLosses, avatarId, pets, mineEnd, mineDepth, diary],
   );
+
+  // Синхронизируем refs для доступа внутри таймеров
+  useEffect(() => { triggerSaveRef.current = triggerSave; }, [triggerSave]);
+  useEffect(() => { buildPayloadRef.current = buildPayload; }, [buildPayload]);
 
   // Поход таймер
   useEffect(() => {
@@ -428,8 +430,15 @@ export default function Index() {
       const earliest = queue[0];
       const left = earliest + REGEN_MS - now;
       if (left <= 0) {
-        regenQueue.current = queue.slice(1);
-        setBattles((b) => Math.min(MAX_BATTLES, b + 1));
+        const updatedQueue = queue.slice(1);
+        regenQueue.current = updatedQueue;
+        setBattles((b) => {
+          const newB = Math.min(MAX_BATTLES, b + 1);
+          if (triggerSaveRef.current && buildPayloadRef.current) {
+            triggerSaveRef.current(buildPayloadRef.current({ battles: newB, battles_regen_queue: updatedQueue }));
+          }
+          return newB;
+        });
         const nextQueue = regenQueue.current;
         if (nextQueue.length > 0) {
           setRegenTimer(Math.max(0, nextQueue[0] + REGEN_MS - Date.now()));
@@ -448,11 +457,12 @@ export default function Index() {
   const spendBattle = useCallback(() => {
     if (battles <= 0) return false;
     const spentAt = Date.now();
-    regenQueue.current = [...regenQueue.current, spentAt];
+    const newQueue = [...regenQueue.current, spentAt];
+    regenQueue.current = newQueue;
     setBattles((b) => {
       triggerSave(buildPayload({
         battles: b - 1,
-        battles_last_regen_at: new Date(spentAt).toISOString(),
+        battles_regen_queue: newQueue,
       }));
       return b - 1;
     });
