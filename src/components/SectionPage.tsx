@@ -844,12 +844,69 @@ export default function SectionPage({
         );
       }
 
+      case "params": {
+        const STAT_DETAILS = [
+          { key: "strength" as const, label: "Сила", icon: "👊", iconBg: "#f0e0d0", desc: "Определяет урон наносимый противнику", barColor: "#c0392b" },
+          { key: "defense" as const, label: "Защита", icon: "🛡️", iconBg: "#d0e8f0", desc: "Определяет какой урон ты можешь заблокировать", barColor: "#2980b9" },
+          { key: "agility" as const, label: "Ловкость", icon: "🌀", iconBg: "#d0f0e0", desc: "Определяет вероятность уворота от удара", barColor: "#27ae60" },
+          { key: "mastery" as const, label: "Мастерство", icon: "🤚", iconBg: "#fff0d0", desc: "Определяет вероятность нанести критический удар", barColor: "#e67e22" },
+          { key: "vitality" as const, label: "Живучесть", icon: "🌿", iconBg: "#d8f0d0", desc: "Определяет макс. количество здоровья и скорость его восстановления", barColor: "#16a34a" },
+        ];
+
+        return (
+          <div className="animate-fade-in">
+            {/* Заголовок */}
+            <div style={{ textAlign: "center", borderBottom: "1px solid var(--parchment-border)", paddingBottom: 8, marginBottom: 0 }}>
+              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "var(--text-dark)", marginBottom: 2 }}>
+                Параметры
+              </h2>
+              <p style={{ fontSize: 12, color: "var(--text-medium)" }}>Твои характеристики</p>
+            </div>
+
+            {/* Аватарка */}
+            <div style={{ textAlign: "center", padding: "14px 0 10px" }}>
+              <div style={{ width: 96, height: 96, borderRadius: 8, border: "2px solid var(--parchment-border)", background: "#2a1010", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 40, overflow: "hidden" }}>
+                {avatarImageUrl
+                  ? <img src={avatarImageUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <span>{getAvatarEmoji(avatarId)}</span>
+                }
+              </div>
+              <div style={{ marginTop: 6, fontFamily: "'Cormorant Garamond', serif", fontSize: 17, fontWeight: 700, color: "var(--text-dark)" }}>{hero.name}</div>
+              <div style={{ fontSize: 12, color: "var(--text-medium)" }}>Уровень {hero.level} · ❤️ {currentHp}/{maxHp}</div>
+            </div>
+
+            {/* Статы */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+              {STAT_DETAILS.map((s, i) => {
+                const level = stats[s.key];
+                const barPct = Math.min(100, (level / 50) * 100);
+                return (
+                  <div key={s.key} style={{ display: "flex", gap: 14, padding: "14px 12px", borderBottom: i < STAT_DETAILS.length - 1 ? "1px solid #e2d9bc" : "none", background: "#faf6e8", alignItems: "flex-start" }}>
+                    <div style={{ width: 52, height: 52, borderRadius: 8, background: s.iconBg, border: "1px solid #d0c090", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>
+                      {s.icon}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: "#2c1a0a", marginBottom: 2 }}>{s.label}</div>
+                      <div style={{ fontSize: 12, color: "#7a5c3a", marginBottom: 6, lineHeight: 1.4 }}>{s.desc}</div>
+                      <div style={{ height: 6, background: "#d0c090", borderRadius: 3, overflow: "hidden", marginBottom: 4 }}>
+                        <div style={{ height: "100%", width: `${barPct}%`, background: s.barColor, borderRadius: 3 }} />
+                      </div>
+                      <div style={{ fontSize: 12, color: "#5a3a1a" }}>Уровень: {level}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      }
+
       case "hero": {
         const HERO_ITEMS = [
           { label: "Профиль", icon: "🧙", action: "profile_view" },
           { label: "Наставник", icon: "📚", action: "" },
           { label: "Анкета", icon: "📋", action: "" },
-          { label: "Параметры", icon: "📊", action: "" },
+          { label: "Параметры", icon: "📊", action: "params" },
           {
             label: "Тренироваться",
             icon: "💪",
@@ -1008,6 +1065,8 @@ export default function SectionPage({
                   onClick={() => {
                     if (item.action === "training")
                       onOpenSection("training" as SectionId);
+                    else if (item.action === "params")
+                      onOpenSection("params" as SectionId);
                     else if (item.action === "avatar_change")
                       setShowAvatarPicker(true);
                     else if (item.action === "profile_view")

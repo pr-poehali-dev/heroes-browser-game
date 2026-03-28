@@ -121,7 +121,7 @@ export type SectionId =
   | "diary" | "quests" | "duel" | "village" | "campaign" | "dungeon"
   | "dragon" | "orcs" | "order" | "guild" | "menagerie" | "top"
   | "main" | "hero" | "profile"
-  | "training" | "mercenaries" | "march" | "invite";
+  | "training" | "mercenaries" | "march" | "invite" | "params";
 
 function getSavedSession(): { userId: string; username: string } | null {
   const userId = localStorage.getItem("heroes_user_id");
