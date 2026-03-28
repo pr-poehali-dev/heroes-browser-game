@@ -302,6 +302,20 @@ export default function Index() {
     }, 1500);
   }, [session]);
 
+  const saveNow = useCallback((payload: object) => {
+    if (!loadedRef.current || !session) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    setSaveStatus("saving");
+    fetch(HERO_SAVE_URL, {
+      method: "POST",
+      headers: { "X-User-Id": session.userId, "Content-Type": "application/json" },
+      body: JSON.stringify({ hero: payload }),
+    }).then(() => {
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    }).catch(() => setSaveStatus("idle"));
+  }, [session]);
+
   const buildPayload = useCallback(
     (overrides: Partial<Record<string, unknown>> = {}) => ({
       name: hero.name,
@@ -461,14 +475,14 @@ export default function Index() {
     regenQueue.current = newQueue;
     setRegenQueueState(newQueue);
     setBattles((b) => {
-      triggerSave(buildPayload({
+      saveNow(buildPayload({
         battles: b - 1,
         battles_regen_queue: newQueue,
       }));
       return b - 1;
     });
     return true;
-  }, [battles, triggerSave, buildPayload]);
+  }, [battles, saveNow, buildPayload]);
 
   const addDiaryEntry = useCallback((entry: Omit<DiaryEntry, "id">) => {
     diaryIdRef.current += 1;
