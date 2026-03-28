@@ -78,6 +78,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [editValues, setEditValues] = useState<Partial<Player>>({});
   const [saveMsg, setSaveMsg] = useState("");
   const [search, setSearch] = useState("");
+  const [orcMsg, setOrcMsg] = useState("");
 
   const fetchPlayers = async (tok: string) => {
     setLoading(true);
@@ -249,6 +250,32 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
         >
           ×
         </button>
+      </div>
+
+      {/* Управление орками */}
+      <div style={{ background: "#2a0a0a", borderBottom: "1px solid #5a1a1a", padding: "8px 16px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+        <span style={{ color: "#f5c542", fontSize: 13, fontWeight: 600 }}>👹 Орки:</span>
+        <button
+          onClick={async () => {
+            setOrcMsg("Запускаю...");
+            const res = await fetch(`${ADMIN_URL}?action=start_orc_raid`, {
+              method: "POST",
+              headers: { "X-Admin-Token": token || "", "Content-Type": "application/json" },
+              body: JSON.stringify({}),
+            });
+            const data = await res.json();
+            if (data.started) {
+              setOrcMsg(`✓ Нападение запущено! HP орков: ${data.orc_hp}`);
+            } else {
+              setOrcMsg("Ошибка: " + (data.error || "неизвестно"));
+            }
+            setTimeout(() => setOrcMsg(""), 4000);
+          }}
+          style={{ padding: "5px 14px", borderRadius: 4, border: "none", background: "#b91c1c", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }}
+        >
+          ⚔️ Запустить нападение орков
+        </button>
+        {orcMsg && <span style={{ fontSize: 12, color: orcMsg.startsWith("✓") ? "#86efac" : "#fca5a5" }}>{orcMsg}</span>}
       </div>
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>

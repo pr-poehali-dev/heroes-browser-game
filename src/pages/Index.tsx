@@ -205,6 +205,8 @@ export default function Index() {
   const [mineEnd, setMineEnd] = useState<number | null>(null);
   const [mineDepth, setMineDepth] = useState(0);
   const [mineTimer, setMineTimer] = useState<number | null>(null);
+  // Рейд орков
+  const [activeRaid, setActiveRaid] = useState<{ ends_at: string; current_orc_hp: number; total_orc_hp: number } | null>(null);
 
   // Load hero from DB on first render
   useEffect(() => {
@@ -282,6 +284,20 @@ export default function Index() {
         loadedRef.current = true;
       })
       .catch(() => { loadedRef.current = true; });
+  }, [session]);
+
+  // Polling активного рейда орков каждые 30 секунд
+  useEffect(() => {
+    if (!session) return;
+    const fetchRaid = () => {
+      fetch(`${HERO_SAVE_URL}?action=active_raid`, { headers: { "X-User-Id": session.userId } })
+        .then(r => r.json())
+        .then(data => setActiveRaid(data.raid || null))
+        .catch(() => {});
+    };
+    fetchRaid();
+    const interval = setInterval(fetchRaid, 30000);
+    return () => clearInterval(interval);
   }, [session]);
 
   // Autosave
@@ -688,6 +704,7 @@ export default function Index() {
         onLogout={handleLogout}
         avatarId={avatarId}
         avatarImageUrl={avatarImageUrl}
+        activeRaid={activeRaid}
       />
 
       <div style={{ maxWidth: 520, margin: "0 auto" }}>
@@ -705,6 +722,8 @@ export default function Index() {
             hero={{ ...hero, name: session.username }}
             silver={silver}
             glory={glory}
+            userId={session.userId}
+            username={session.username}
             stats={stats}
             currentHp={currentHp}
             maxHp={maxHp}
@@ -745,6 +764,16 @@ export default function Index() {
             onChangeAvatarImage={(url) => {
               setAvatarImageUrl(url);
               localStorage.setItem("heroes_avatar_image", url);
+            }}
+            onBattleSpentForOrcs={() => {
+              setBattles(prev => Math.max(0, prev - 1));
+              triggerSave(buildPayload({ battles: Math.max(0, battles - 1) }));
+              setActiveRaid(prev => prev ? { ...prev } : null);
+              // Обновить рейд после атаки
+              setTimeout(() => {
+                fetch(`${HERO_SAVE_URL}?action=active_raid`, { headers: { "X-User-Id": session.userId } })
+                  .then(r => r.json()).then(d => setActiveRaid(d.raid || null)).catch(() => {});
+              }, 500);
             }}
           />
         )}

@@ -1,4 +1,6 @@
 import DuelSection, { type DuelReward } from "@/components/DuelSection";
+import OrderSection from "@/components/OrderSection";
+import OrcsSection from "@/components/OrcsSection";
 import { DiaryEntry, HeroStats, SectionId } from "@/pages/Index";
 
 interface QuestDef {
@@ -103,6 +105,8 @@ interface SectionLogProps {
   duelDifficulty: "higher" | "equal" | "lower";
   avatarId: string;
   avatarImageUrl?: string;
+  userId?: string;
+  username?: string;
   onSpendBattle: () => boolean;
   onDuelEnd: (
     result: "victory" | "defeat",
@@ -112,6 +116,7 @@ interface SectionLogProps {
   onClaimQuest: (quest: QuestDef) => void;
   onDifficultyChange: (d: "higher" | "equal" | "lower") => void;
   onViewProfile: (name: string, level: number) => void;
+  onBattleSpentForOrcs?: () => void;
 }
 
 export default function SectionLog({
@@ -130,11 +135,14 @@ export default function SectionLog({
   duelDifficulty,
   avatarId,
   avatarImageUrl,
+  userId = "",
+  username = "",
   onSpendBattle,
   onDuelEnd,
   onClaimQuest,
   onDifficultyChange,
   onViewProfile,
+  onBattleSpentForOrcs,
 }: SectionLogProps) {
   const getQuestProgress = (quest: QuestDef): number => {
     if (quest.type === "silver_earn") return totalSilverEarned;
@@ -523,6 +531,18 @@ export default function SectionLog({
             </table>
           </div>
         </div>
+      );
+
+    case "order":
+      return <OrderSection userId={userId} username={username} />;
+
+    case "orcs":
+      return (
+        <OrcsSection
+          userId={userId}
+          battles={battles}
+          onBattleSpent={onBattleSpentForOrcs || (() => {})}
+        />
       );
 
     default: {

@@ -149,5 +149,29 @@ def handler(event: dict, context) -> dict:
             "body": json.dumps({"saved": True}),
         }
 
+    if method == "POST" and action == "start_orc_raid":
+        # Считаем суммарное HP всех членов орденов
+        rows = conn.run(f"""
+            SELECT COALESCE(SUM(h.max_hp), 1000)
+            FROM {SCHEMA}.order_members m
+            JOIN {SCHEMA}.heroes h ON h.user_id = m.user_id
+        """)
+        total_hp = int(rows[0][0]) if rows else 1000
+        import datetime
+        now = datetime.datetime.now(datetime.timezone.utc)
+        ends_at = now + datetime.timedelta(hours=5)
+        # Завершаем предыдущие рейды
+        conn.run(f"UPDATE {SCHEMA}.orc_raids SET is_active = FALSE, result = 'expired' WHERE is_active = TRUE")
+        conn.run(f"""
+            INSERT INTO {SCHEMA}.orc_raids (started_at, ends_at, total_orc_hp, current_orc_hp, is_active, result)
+            VALUES ('{now.isoformat()}', '{ends_at.isoformat()}', {total_hp}, {total_hp}, TRUE, 'pending')
+        """)
+        conn.close()
+        return {
+            "statusCode": 200,
+            "headers": CORS_HEADERS,
+            "body": json.dumps({"started": True, "orc_hp": total_hp, "ends_at": ends_at.isoformat()}),
+        }
+
     conn.close()
     return {"statusCode": 400, "headers": CORS_HEADERS, "body": json.dumps({"error": "Неизвестный запрос"})}

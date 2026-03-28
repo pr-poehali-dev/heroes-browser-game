@@ -42,6 +42,8 @@ interface SectionPageProps {
   };
   silver: number;
   glory: number;
+  userId?: string;
+  username?: string;
   stats: HeroStats;
   currentHp: number;
   maxHp: number;
@@ -84,6 +86,7 @@ interface SectionPageProps {
   onClaimMine: () => number;
   onChangeAvatarImage?: (url: string) => void;
   avatarImageUrl?: string;
+  onBattleSpentForOrcs?: () => void;
 }
 
 export default function SectionPage(props: SectionPageProps) {
@@ -152,11 +155,14 @@ export default function SectionPage(props: SectionPageProps) {
         duelDifficulty={props.duelDifficulty}
         avatarId={props.avatarId}
         avatarImageUrl={props.avatarImageUrl}
+        userId={props.userId}
+        username={props.username}
         onSpendBattle={props.onSpendBattle}
         onDuelEnd={props.onDuelEnd}
         onClaimQuest={props.onClaimQuest}
         onDifficultyChange={props.onDifficultyChange}
         onViewProfile={props.onViewProfile}
+        onBattleSpentForOrcs={props.onBattleSpentForOrcs}
       />
     );
   };
