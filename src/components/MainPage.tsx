@@ -53,9 +53,7 @@ function VikingDivider() {
       }}
     >
       <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, transparent, #a07840)" }} />
-      <span style={{ fontSize: 13, color: "#7a5828", letterSpacing: "0.25em", fontFamily: "'Cormorant Garamond', serif", fontWeight: 600 }}>
-        ᚦ ᚢ ᚱ ᛊ
-      </span>
+      <span style={{ fontSize: 13, color: "#7a5828", letterSpacing: "0.25em", fontFamily: "'Cormorant Garamond', serif", fontWeight: 600 }}></span>
       <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, #a07840, transparent)" }} />
     </div>
   );
