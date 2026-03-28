@@ -84,10 +84,6 @@ const HERO_BASE = {
   gold: 250,
   silver: 480,
   gems: 5,
-  attack: 12,
-  defense: 8,
-  magic: 6,
-  speed: 10,
   location: "Поселок",
 };
 
@@ -317,10 +313,6 @@ export default function Index() {
       silver,
       gems: hero.gems,
       glory,
-      attack: hero.attack,
-      defense: hero.defense,
-      magic: hero.magic,
-      speed: hero.speed,
       stat_strength: stats.strength,
       stat_defense: stats.defense,
       stat_agility: stats.agility,

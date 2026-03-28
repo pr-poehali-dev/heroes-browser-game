@@ -69,7 +69,6 @@ def handler(event: dict, context) -> dict:
     if method == "GET":
         sql = f"""
             SELECT name, level, xp, xp_next, hp, max_hp, gold, silver, gems, glory,
-                   attack, defense, magic, speed,
                    stat_strength, stat_defense, stat_agility, stat_mastery, stat_vitality,
                    battles, battles_last_regen_at, battles_regen_queue, campaign_end_at, campaign_reward,
                    location, quest_progress, quest_claimed, total_silver_earned,
@@ -91,7 +90,6 @@ def handler(event: dict, context) -> dict:
 
         keys = [
             "name", "level", "xp", "xp_next", "hp", "max_hp", "gold", "silver", "gems", "glory",
-            "attack", "defense", "magic", "speed",
             "stat_strength", "stat_defense", "stat_agility", "stat_mastery", "stat_vitality",
             "battles", "battles_last_regen_at", "battles_regen_queue", "campaign_end_at", "campaign_reward",
             "location", "quest_progress", "quest_claimed", "total_silver_earned",
@@ -148,10 +146,6 @@ def handler(event: dict, context) -> dict:
         silver = int(h.get("silver", 480))
         gems = int(h.get("gems", 5))
         glory = int(h.get("glory", 0))
-        attack = int(h.get("attack", 12))
-        defense = int(h.get("defense", 8))
-        magic = int(h.get("magic", 6))
-        speed = int(h.get("speed", 10))
         stat_strength = int(h.get("stat_strength", 5))
         stat_defense = int(h.get("stat_defense", 5))
         stat_agility = int(h.get("stat_agility", 5))
@@ -189,7 +183,6 @@ def handler(event: dict, context) -> dict:
         sql = f"""
             INSERT INTO {SCHEMA}.heroes (
                 user_id, name, level, xp, xp_next, hp, max_hp, gold, silver, gems, glory,
-                attack, defense, magic, speed,
                 stat_strength, stat_defense, stat_agility, stat_mastery, stat_vitality,
                 battles, battles_last_regen_at, battles_regen_queue, campaign_end_at, campaign_reward,
                 location, quest_progress, quest_claimed, total_silver_earned,
@@ -199,7 +192,6 @@ def handler(event: dict, context) -> dict:
             ) VALUES (
                 '{uid}', '{name}', {level}, {xp}, {xp_next}, {hp}, {max_hp},
                 {gold}, {silver}, {gems}, {glory},
-                {attack}, {defense}, {magic}, {speed},
                 {stat_strength}, {stat_defense}, {stat_agility}, {stat_mastery}, {stat_vitality},
                 {battles}, {blr}, '{battles_regen_queue}'::jsonb, {cea}, {campaign_reward},
                 '{location}', '{quest_progress}'::jsonb, '{quest_claimed}'::jsonb,
@@ -212,8 +204,7 @@ def handler(event: dict, context) -> dict:
                 name = EXCLUDED.name, level = EXCLUDED.level, xp = EXCLUDED.xp,
                 xp_next = EXCLUDED.xp_next, hp = EXCLUDED.hp, max_hp = EXCLUDED.max_hp,
                 gold = EXCLUDED.gold, silver = EXCLUDED.silver, gems = EXCLUDED.gems,
-                glory = EXCLUDED.glory, attack = EXCLUDED.attack, defense = EXCLUDED.defense,
-                magic = EXCLUDED.magic, speed = EXCLUDED.speed,
+                glory = EXCLUDED.glory,
                 stat_strength = EXCLUDED.stat_strength, stat_defense = EXCLUDED.stat_defense,
                 stat_agility = EXCLUDED.stat_agility, stat_mastery = EXCLUDED.stat_mastery,
                 stat_vitality = EXCLUDED.stat_vitality, battles = EXCLUDED.battles,

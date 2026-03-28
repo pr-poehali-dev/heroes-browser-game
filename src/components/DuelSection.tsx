@@ -35,8 +35,7 @@ interface BattleLog {
 
 interface DuelSectionProps {
   hero: {
-    name: string; level: number; attack: number; defense: number;
-    magic: number; speed: number; hp: number; maxHp: number;
+    name: string; level: number; hp: number; maxHp: number;
   };
   stats: HeroStats;
   battles: number;
@@ -84,10 +83,10 @@ function generateMercenary(playerStats: HeroStats, playerLevel: number, index: n
     name: t.name, avatar: t.avatar,
     level: Math.max(1, playerLevel + rnd(-1, 1)),
     hp, maxHp: hp,
-    attack: 12 + str * 2 + mas + rnd(-2, 2),
-    defense: 8 + def * 2 + rnd(-2, 2),
-    magic: 6 + mas + rnd(-1, 1),
-    speed: 10 + agi + rnd(-1, 1),
+    attack: str * 2 + mas + rnd(-2, 2),
+    defense: def * 2 + rnd(-2, 2),
+    magic: mas + rnd(-1, 1),
+    speed: agi + rnd(-1, 1),
     isReal: false,
   };
 }
@@ -210,8 +209,10 @@ export default function DuelSection({
   const player: Fighter = {
     name: hero.name, level: hero.level,
     hp: hero.hp, maxHp: hero.maxHp,
-    attack: hero.attack, defense: hero.defense,
-    magic: hero.magic, speed: hero.speed,
+    attack: stats.strength * 2 + stats.mastery,
+    defense: stats.defense * 2,
+    magic: stats.mastery,
+    speed: stats.agility,
     avatar: avatarImageUrl ? "img" : getAvatarEmoji(avatarId),
   };
 
@@ -235,10 +236,10 @@ export default function DuelSection({
           level: lvl,
           avatar: p.avatar as string,
           hp, maxHp: hp,
-          attack: 12 + str * 2 + mas,
-          defense: 8 + def * 2,
-          magic: 6 + mas,
-          speed: 10 + agi,
+          attack: str * 2 + mas,
+          defense: def * 2,
+          magic: mas,
+          speed: agi,
           isReal: true,
           userId: p.user_id as string,
           duel_wins: p.duel_wins as number || 0,

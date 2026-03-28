@@ -283,10 +283,6 @@ interface SectionPageProps {
   hero: {
     name: string;
     level: number;
-    attack: number;
-    defense: number;
-    magic: number;
-    speed: number;
     hp: number;
     maxHp: number;
     gold: number;
@@ -398,10 +394,6 @@ export default function SectionPage({
 
   const heroForDuel = {
     ...hero,
-    attack: hero.attack + stats.strength * 2 + stats.mastery,
-    defense: hero.defense + stats.defense * 2,
-    magic: hero.magic + stats.mastery,
-    speed: hero.speed + stats.agility,
     maxHp,
     hp: currentHp,
   };
