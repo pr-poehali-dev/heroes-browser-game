@@ -270,7 +270,7 @@ export default function Index() {
         const loadedBattles = h.battles ?? MAX_BATTLES;
         if (savedQueue.length > 0) {
           const now = Date.now();
-          const stillPending = savedQueue.filter((t) => t + REGEN_MS > now);
+          const stillPending = savedQueue.filter((deadline) => deadline > now);
           const regenedOffline = savedQueue.length - stillPending.length;
           const newBattles = Math.min(MAX_BATTLES, loadedBattles + regenedOffline);
           setBattles(newBattles);
@@ -427,7 +427,8 @@ export default function Index() {
     return () => clearInterval(interval);
   }, [mineEnd]);
 
-  // Боёв регенерация — запускается один раз, читает очередь через ref
+  // Очередь хранит дедлайны — момент, когда бой будет готов (ms).
+  // Тик проверяет первый элемент: если now >= deadline — бой восстановлен.
   useEffect(() => {
     const tick = () => {
       const queue = regenQueue.current;
@@ -436,9 +437,8 @@ export default function Index() {
         return;
       }
       const now = Date.now();
-      const earliest = queue[0];
-      const left = earliest + REGEN_MS - now;
-      if (left <= 0) {
+      const deadline = queue[0];
+      if (now >= deadline) {
         const updatedQueue = queue.slice(1);
         regenQueue.current = updatedQueue;
         setRegenQueueState(updatedQueue);
@@ -449,14 +449,13 @@ export default function Index() {
           }
           return newB;
         });
-        const nextQueue = regenQueue.current;
-        if (nextQueue.length > 0) {
-          setRegenTimer(Math.max(0, nextQueue[0] + REGEN_MS - Date.now()));
+        if (updatedQueue.length > 0) {
+          setRegenTimer(Math.max(0, updatedQueue[0] - Date.now()));
         } else {
           setRegenTimer(null);
         }
       } else {
-        setRegenTimer(left);
+        setRegenTimer(deadline - now);
       }
     };
     timerRef.current = setInterval(tick, 1000);
@@ -468,10 +467,9 @@ export default function Index() {
     if (battles <= 0) return false;
     const now = Date.now();
     const prev = regenQueue.current;
-    // Каждый бой начинает накапливаться строго через REGEN_MS после предыдущего
-    const lastStart = prev.length > 0 ? prev[prev.length - 1] : now - REGEN_MS;
-    const spentAt = Math.max(now, lastStart + REGEN_MS);
-    const newQueue = [...prev, spentAt];
+    const lastDeadline = prev.length > 0 ? prev[prev.length - 1] : now;
+    const deadline = Math.max(now, lastDeadline) + REGEN_MS;
+    const newQueue = [...prev, deadline];
     regenQueue.current = newQueue;
     setRegenQueueState(newQueue);
     setBattles((b) => {
