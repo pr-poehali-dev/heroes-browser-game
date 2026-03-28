@@ -1,7 +1,9 @@
 import { SectionId } from "@/pages/Index";
 import { getAvatarEmoji } from "@/components/SectionPage";
+import { useState, useEffect, useRef } from "react";
 
 const MAX_BATTLES = 6;
+const REGEN_MS = 5 * 60 * 1000;
 
 function formatTimerShort(ms: number) {
   const total = Math.ceil(ms / 1000);
@@ -26,6 +28,7 @@ interface GameHeaderProps {
   silver: number;
   battles: number;
   regenTimer: number | null;
+  regenQueue?: number[];
   campaignTimer: number | null;
   isCampaignActive: boolean;
   campaignNotice: string | null;
@@ -36,8 +39,43 @@ interface GameHeaderProps {
   avatarImageUrl?: string;
 }
 
+function BattleSlots({ battles, regenQueue }: { battles: number; regenQueue: number[] }) {
+  const [, setTick] = useState(0);
+  const rafRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (regenQueue.length === 0) return;
+    rafRef.current = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => { if (rafRef.current) clearInterval(rafRef.current); };
+  }, [regenQueue.length]);
+
+  const now = Date.now();
+  const slots = Array.from({ length: MAX_BATTLES }, (_, i) => {
+    const active = i < battles;
+    const qIdx = i - battles;
+    const spentAt = !active && qIdx >= 0 && qIdx < regenQueue.length ? regenQueue[qIdx] : null;
+    const msLeft = spentAt !== null ? Math.max(0, spentAt + REGEN_MS - now) : null;
+    return { active, msLeft };
+  });
+
+  return (
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 2, margin: "0 4px" }}>
+      {slots.map((slot, i) => (
+        <div key={i} style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+          <span style={{ fontSize: 13, opacity: slot.active ? 1 : 0.25, lineHeight: 1 }}>⚔️</span>
+          {slot.msLeft !== null && (
+            <span style={{ fontSize: 9, color: "#f0d080", lineHeight: 1, marginTop: 1, whiteSpace: "nowrap" }}>
+              {formatTimerShort(slot.msLeft)}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function GameHeader({
-  hero, currentHp, maxHp, silver, battles, regenTimer, campaignTimer,
+  hero, currentHp, maxHp, silver, battles, regenTimer, regenQueue = [], campaignTimer,
   isCampaignActive, campaignNotice, onOpenSection, saveStatus = "idle", onLogout, avatarId = "m1", avatarImageUrl = "",
 }: GameHeaderProps) {
   const sep = <span style={{ color: "rgba(255,220,100,0.4)", margin: "0 1px" }}></span>;
@@ -116,13 +154,8 @@ export default function GameHeader({
 
         {sep}
 
-        {/* Бои + таймер */}
-        <span style={{ margin: "0 4px", display: "inline-flex", alignItems: "center", gap: 3 }}>
-          ⚔️ {battles}/{MAX_BATTLES}
-          {regenTimer !== null && battles < MAX_BATTLES && (
-            <span style={{ fontSize: 11, color: "#f0d080" }}>+{formatTimerShort(regenTimer)}</span>
-          )}
-        </span>
+        {/* Бои + таймеры по слотам */}
+        <BattleSlots battles={battles} regenQueue={regenQueue} />
 
         {/* Поход */}
         {isCampaignActive && campaignTimer !== null && (

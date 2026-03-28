@@ -183,6 +183,7 @@ export default function Index() {
 
   const [battles, setBattles] = useState(MAX_BATTLES);
   const regenQueue = useRef<number[]>([]);
+  const [regenQueueState, setRegenQueueState] = useState<number[]>([]);
   const [regenTimer, setRegenTimer] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const triggerSaveRef = useRef<((payload: object) => void) | null>(null);
@@ -279,6 +280,7 @@ export default function Index() {
           const newBattles = Math.min(MAX_BATTLES, loadedBattles + regenedOffline);
           setBattles(newBattles);
           regenQueue.current = stillPending;
+          setRegenQueueState(stillPending);
         }
         loadedRef.current = true;
       })
@@ -432,6 +434,7 @@ export default function Index() {
       if (left <= 0) {
         const updatedQueue = queue.slice(1);
         regenQueue.current = updatedQueue;
+        setRegenQueueState(updatedQueue);
         setBattles((b) => {
           const newB = Math.min(MAX_BATTLES, b + 1);
           if (triggerSaveRef.current && buildPayloadRef.current) {
@@ -459,6 +462,7 @@ export default function Index() {
     const spentAt = Date.now();
     const newQueue = [...regenQueue.current, spentAt];
     regenQueue.current = newQueue;
+    setRegenQueueState(newQueue);
     setBattles((b) => {
       triggerSave(buildPayload({
         battles: b - 1,
@@ -666,6 +670,7 @@ export default function Index() {
         silver={silver}
         battles={battles}
         regenTimer={regenTimer}
+        regenQueue={regenQueueState}
         campaignTimer={campaignTimer}
         isCampaignActive={isCampaignActive}
         campaignNotice={campaignNotice}
