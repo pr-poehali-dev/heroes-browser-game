@@ -39,7 +39,7 @@ function VikingDivider() {
         display: "flex",
         alignItems: "center",
         gap: 2,
-        padding: "1px 5px",
+        padding: "3px 16px",
         background:
           "linear-gradient(90deg, #f5ecc8 0%, #e8d59a 50%, #f5ecc8 100%)",
         borderTop: "1px solid #c8a96e",
