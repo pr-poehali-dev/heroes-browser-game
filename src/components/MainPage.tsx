@@ -101,9 +101,9 @@ export default function MainPage({
           alt="Баннер"
           style={{
             width: "150%",
-            height: "150%",
+            height: "300%",
             objectFit: "cover",
-            opacity: 1.9,
+            opacity: 0.9,
           }}
         />
         <div
