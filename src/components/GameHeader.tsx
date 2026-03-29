@@ -15,7 +15,8 @@ function formatTimer(ms: number) {
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
-  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  if (h > 0)
+    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
@@ -56,11 +57,26 @@ function formatRaidTimer(endsAt: string): string {
 }
 
 export default function GameHeader({
-  hero, currentHp, maxHp, silver, battles, regenTimer, regenQueue = [], campaignTimer,
-  isCampaignActive, campaignNotice, onOpenSection, saveStatus = "idle", onLogout,
-  avatarId = "m1", avatarImageUrl = "", activeRaid,
+  hero,
+  currentHp,
+  maxHp,
+  silver,
+  battles,
+  regenTimer,
+  regenQueue = [],
+  campaignTimer,
+  isCampaignActive,
+  campaignNotice,
+  onOpenSection,
+  saveStatus = "idle",
+  onLogout,
+  avatarId = "m1",
+  avatarImageUrl = "",
+  activeRaid,
 }: GameHeaderProps) {
-  const sep = <span style={{ color: "rgba(255,220,100,0.4)", margin: "0 1px" }}></span>;
+  const sep = (
+    <span style={{ color: "rgba(255,220,100,0.4)", margin: "0 1px" }}></span>
+  );
 
   return (
     <header className="game-header">
@@ -68,7 +84,8 @@ export default function GameHeader({
       {activeRaid && new Date(activeRaid.ends_at).getTime() > Date.now() && (
         <div
           style={{
-            background: "linear-gradient(90deg, #7f1d1d 0%, #b91c1c 50%, #7f1d1d 100%)",
+            background:
+              "linear-gradient(90deg, #7f1d1d 0%, #b91c1c 50%, #7f1d1d 100%)",
             color: "#fef2f2",
             textAlign: "center",
             padding: "5px 12px",
@@ -85,7 +102,7 @@ export default function GameHeader({
           onClick={() => onOpenSection("orcs")}
         >
           <span style={{ fontSize: 16 }}>👹</span>
-          <span>ОРДЫ ОРКОВ НАПАЛИ НА ПОСЕЛОК!</span>
+          <span>Орды орков напали на посёлок!</span>
           <span style={{ color: "#fca5a5", fontSize: 12 }}>
             ⏱ {formatRaidTimer(activeRaid.ends_at)}
           </span>
@@ -96,18 +113,45 @@ export default function GameHeader({
       )}
 
       {/* Название */}
-      <div style={{ textAlign: "center", padding: "6px 0 4px", borderBottom: "1px solid rgba(200,150,60,0.4)" }}>
+      <div
+        style={{
+          textAlign: "center",
+          padding: "6px 0 4px",
+          borderBottom: "1px solid rgba(200,150,60,0.4)",
+        }}
+      >
         {campaignNotice && (
-          <div style={{ fontSize: 11, color: "#15803d", fontWeight: 600, marginBottom: 2, background: "#f0fdf4", padding: "2px 8px", borderRadius: 3 }}>
+          <div
+            style={{
+              fontSize: 11,
+              color: "#15803d",
+              fontWeight: 600,
+              marginBottom: 2,
+              background: "#f0fdf4",
+              padding: "2px 8px",
+              borderRadius: 3,
+            }}
+          >
             {campaignNotice}
           </div>
         )}
         {saveStatus !== "idle" && (
-          <div style={{ fontSize: 10, color: saveStatus === "saved" ? "#15803d" : "#b45309", marginBottom: 1 }}>
+          <div
+            style={{
+              fontSize: 10,
+              color: saveStatus === "saved" ? "#15803d" : "#b45309",
+              marginBottom: 1,
+            }}
+          >
             {saveStatus === "saving" ? "💾 сохранение..." : "✓ сохранено"}
           </div>
         )}
-        <h1 className="game-title" style={{ fontSize: 20, letterSpacing: "0.3em", margin: 0 }}>⚚Варвары⚚</h1>
+        <h1
+          className="game-title"
+          style={{ fontSize: 20, letterSpacing: "0.3em", margin: 0 }}
+        >
+          ⚚Варвары⚚
+        </h1>
       </div>
 
       {/* Одна строка со всеми параметрами */}
@@ -129,13 +173,40 @@ export default function GameHeader({
         {/* Аватарка + имя */}
         <span
           onClick={() => onOpenSection("hero")}
-          style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, marginRight: 4 }}
+          style={{
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            marginRight: 4,
+          }}
         >
-          <span style={{ width: 18, height: 18, display: "inline-flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRadius: 3, flexShrink: 0 }}>
-            {avatarImageUrl
-              ? <img src={avatarImageUrl} alt="avatar" style={{ width: 18, height: 18, objectFit: "cover", borderRadius: 2 }} />
-              : <span style={{ fontSize: 14 }}>{getAvatarEmoji(avatarId)}</span>
-            }
+          <span
+            style={{
+              width: 18,
+              height: 18,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+              borderRadius: 3,
+              flexShrink: 0,
+            }}
+          >
+            {avatarImageUrl ? (
+              <img
+                src={avatarImageUrl}
+                alt="avatar"
+                style={{
+                  width: 18,
+                  height: 18,
+                  objectFit: "cover",
+                  borderRadius: 2,
+                }}
+              />
+            ) : (
+              <span style={{ fontSize: 14 }}>{getAvatarEmoji(avatarId)}</span>
+            )}
           </span>
           <span style={{ color: "#ffe89a" }}>{hero.name}</span>
         </span>
@@ -170,12 +241,21 @@ export default function GameHeader({
         {/* Бои + таймер — кликабельно, ведёт в дуэль */}
         <span
           onClick={() => onOpenSection("duel")}
-          style={{ margin: "0 4px", display: "inline-flex", alignItems: "center", gap: 3, cursor: "pointer", borderBottom: "1px dashed rgba(255,220,100,0.5)" }}
+          style={{
+            margin: "0 4px",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 3,
+            cursor: "pointer",
+            borderBottom: "1px dashed rgba(255,220,100,0.5)",
+          }}
           title="Перейти в Дуэль"
         >
           ⚔️ {battles}/{MAX_BATTLES}
           {regenTimer !== null && battles < MAX_BATTLES && (
-            <span style={{ fontSize: 11, color: "#f0d080" }}>+{formatTimerShort(regenTimer)}</span>
+            <span style={{ fontSize: 11, color: "#f0d080" }}>
+              +{formatTimerShort(regenTimer)}
+            </span>
           )}
         </span>
 
@@ -183,7 +263,9 @@ export default function GameHeader({
         {isCampaignActive && campaignTimer !== null && (
           <>
             {sep}
-            <span style={{ margin: "0 4px" }}>🗺️ {formatTimer(campaignTimer)}</span>
+            <span style={{ margin: "0 4px" }}>
+              🗺️ {formatTimer(campaignTimer)}
+            </span>
           </>
         )}
 
@@ -191,7 +273,16 @@ export default function GameHeader({
         {onLogout && (
           <>
             {sep}
-            <span onClick={onLogout} style={{ cursor: "pointer", margin: "0 4px", opacity: 0.7, fontSize: 12 }} title="Выйти">
+            <span
+              onClick={onLogout}
+              style={{
+                cursor: "pointer",
+                margin: "0 4px",
+                opacity: 0.7,
+                fontSize: 12,
+              }}
+              title="Выйти"
+            >
               🚪
             </span>
           </>
