@@ -149,9 +149,7 @@ export default function GameHeader({
         <h1
           className="game-title"
           style={{ fontSize: 20, letterSpacing: "0.3em", margin: 0 }}
-        >
-          ⚚Варвары⚚
-        </h1>
+        >⨳Варвары⨳</h1>
       </div>
 
       {/* Одна строка со всеми параметрами */}
