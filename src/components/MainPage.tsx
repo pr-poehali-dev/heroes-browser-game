@@ -203,7 +203,7 @@ export default function MainPage({
               cursor: "pointer",
             }}
           >
-            <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>
+            <span style={{ fontSize: 10, width: 24, textAlign: "center" }}>
               {n.icon}
             </span>
             <span
