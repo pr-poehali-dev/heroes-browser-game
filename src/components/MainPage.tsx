@@ -103,7 +103,7 @@ export default function MainPage({
             width: "150%",
             height: "150%",
             objectFit: "cover",
-            opacity: 0.9,
+            opacity: 1.9,
           }}
         />
         <div
