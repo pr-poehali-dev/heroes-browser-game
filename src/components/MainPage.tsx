@@ -9,7 +9,7 @@ const BANNER_URL =
 // Группы пунктов меню с разделителем-рунной вставкой между группами
 const SECTION_GROUPS = [
   [
-    { id: "diary", label: "Дневник", icon: "⭐" },
+    { id: "diary", label: "Днᴇвник", icon: "⭐" },
     { id: "training", label: "Тренировочный лагерь", icon: "🏋️" },
     { id: "duel", label: "Дуэль", icon: "⚔️" },
     { id: "campaign", label: "Путешествие", icon: "🌍" },
