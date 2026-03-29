@@ -100,8 +100,8 @@ export default function MainPage({
           src={BANNER_URL}
           alt="Баннер"
           style={{
-            width: "50%",
-            height: "50%",
+            width: "150%",
+            height: "150%",
             objectFit: "cover",
             opacity: 0.9,
           }}
