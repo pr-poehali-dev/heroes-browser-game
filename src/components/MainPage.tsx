@@ -168,7 +168,7 @@ export default function MainPage({
                   </span>
                   <span
                     style={{
-                      fontSize: 7,
+                      fontSize: 20,
                       color: "var(--text-dark)",
                       fontWeight: 100,
                     }}
