@@ -60,7 +60,7 @@ function VikingDivider() {
           color: "#7a5828",
           letterSpacing: "0.25em",
           fontFamily: "'Cormorant Garamond', serif",
-          fontWeight: 600,
+          fontWeight: 100,
         }}
       ></span>
       <div
