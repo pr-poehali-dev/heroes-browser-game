@@ -208,9 +208,9 @@ export default function MainPage({
             </span>
             <span
               style={{
-                fontSize: 15,
+                fontSize: 20,
                 color: "var(--text-dark)",
-                fontWeight: 600,
+                fontWeight: 100,
               }}
             >
               {n.label}
