@@ -41,7 +41,7 @@ function VikingDivider() {
         gap: 2,
         padding: "3px 16px",
         background:
-          "linear-gradient(90deg, #f5ecc8 0%, #e8d59a 50%, #f5ecc8 100%)",
+          "linear-gradient(90deg, #f5ecc8 0%, #e8d59a 0%, #f5ecc8 100%)",
         borderTop: "1px solid #c8a96e",
         borderBottom: "1px solid #c8a96e",
         userSelect: "none",
