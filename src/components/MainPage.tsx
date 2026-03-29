@@ -90,7 +90,7 @@ export default function MainPage({
       {/* Баннер */}
       <div
         style={{
-          height: 130,
+          height: 200,
           background: "#1a0a0a",
           overflow: "hidden",
           position: "relative",
