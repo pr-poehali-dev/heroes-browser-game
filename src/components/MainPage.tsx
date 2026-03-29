@@ -170,7 +170,7 @@ export default function MainPage({
                     style={{
                       fontSize: 15,
                       color: "var(--text-dark)",
-                      fontWeight: 500,
+                      fontWeight: 100,
                     }}
                   >
                     {s.label}
