@@ -56,7 +56,7 @@ function VikingDivider() {
       />
       <span
         style={{
-          fontSize: 13,
+          fontSize: 1,
           color: "#7a5828",
           letterSpacing: "0.25em",
           fontFamily: "'Cormorant Garamond', serif",
