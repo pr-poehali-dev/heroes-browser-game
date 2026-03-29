@@ -162,7 +162,7 @@ export default function MainPage({
                   }}
                 >
                   <span
-                    style={{ fontSize: 10, width: 24, textAlign: "center" }}
+                    style={{ fontSize: 15, width: 20, textAlign: "center" }}
                   >
                     {s.icon}
                   </span>
