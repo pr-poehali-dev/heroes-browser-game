@@ -5,6 +5,22 @@ import SectionHeroProfile from "@/components/SectionHeroProfile";
 import SectionAdventures from "@/components/SectionAdventures";
 import SectionLog from "@/components/SectionLog";
 
+export const MALE_AVATARS = [
+  { id: "m1", emoji: "⚔️", label: "Воин" },
+  { id: "m2", emoji: "🗡️", label: "Разбойник" },
+  { id: "m3", emoji: "🛡️", label: "Страж" },
+  { id: "m4", emoji: "🏹", label: "Лучник" },
+  { id: "m5", emoji: "🪓", label: "Варвар" },
+  { id: "m6", emoji: "🔱", label: "Вождь" },
+];
+export const FEMALE_AVATARS = [
+  { id: "f1", emoji: "🔮", label: "Чародейка" },
+  { id: "f2", emoji: "🌙", label: "Ведьма" },
+  { id: "f3", emoji: "🌸", label: "Жрица" },
+  { id: "f4", emoji: "⚡", label: "Буревестник" },
+  { id: "f5", emoji: "🌿", label: "Друидка" },
+  { id: "f6", emoji: "💫", label: "Провидица" },
+];
 export const ALL_AVATARS = [...MALE_AVATARS, ...FEMALE_AVATARS];
 export const getAvatarEmoji = (id: string) =>
   ALL_AVATARS.find((a) => a.id === id)?.emoji ?? "⚔️";
@@ -12,13 +28,7 @@ export const getAvatarLabel = (id: string) =>
   ALL_AVATARS.find((a) => a.id === id)?.label ?? "Герой";
 
 const HERO_SECTIONS: SectionId[] = ["hero", "profile", "training", "params"];
-const ADVENTURE_SECTIONS: SectionId[] = [
-  "campaign",
-  "dungeon",
-  "village",
-  "menagerie",
-  "mercenaries",
-];
+const ADVENTURE_SECTIONS: SectionId[] = ["campaign", "dungeon", "village", "menagerie", "mercenaries"];
 
 interface SectionPageProps {
   activeSection: SectionId;
@@ -67,19 +77,7 @@ interface SectionPageProps {
   ) => void;
   onUpgradeStat: (key: keyof HeroStats) => void;
   onStartCampaign: (minutes: number) => void;
-  onClaimQuest: (quest: {
-    id: number;
-    title: string;
-    desc: string;
-    reward: string;
-    target: number;
-    type:
-      | "duel_wins"
-      | "campaign_count"
-      | "upgrade_stat"
-      | "silver_earn"
-      | "glory_earn";
-  }) => void;
+  onClaimQuest: (quest: { id: number; title: string; desc: string; reward: string; target: number; type: "duel_wins" | "campaign_count" | "upgrade_stat" | "silver_earn" | "glory_earn" }) => void;
   onDifficultyChange: (d: "higher" | "equal" | "lower") => void;
   onViewProfile: (name: string, level: number) => void;
   onChangeAvatar: (id: string) => void;
@@ -92,15 +90,16 @@ interface SectionPageProps {
 }
 
 export default function SectionPage(props: SectionPageProps) {
-  const { activeSection, onOpenSection } = props;
+  const {
+    activeSection,
+    onOpenSection,
+  } = props;
 
   const renderContent = () => {
     if (HERO_SECTIONS.includes(activeSection)) {
       return (
         <SectionHeroProfile
-          activeSection={
-            activeSection as "hero" | "profile" | "training" | "params"
-          }
+          activeSection={activeSection as "hero" | "profile" | "training" | "params"}
           hero={props.hero}
           silver={props.silver}
           stats={props.stats}
@@ -121,14 +120,7 @@ export default function SectionPage(props: SectionPageProps) {
     if (ADVENTURE_SECTIONS.includes(activeSection)) {
       return (
         <SectionAdventures
-          activeSection={
-            activeSection as
-              | "campaign"
-              | "dungeon"
-              | "village"
-              | "menagerie"
-              | "mercenaries"
-          }
+          activeSection={activeSection as "campaign" | "dungeon" | "village" | "menagerie" | "mercenaries"}
           silver={props.silver}
           campaignEnd={props.campaignEnd}
           campaignTimer={props.campaignTimer}
