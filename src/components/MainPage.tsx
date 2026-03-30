@@ -11,11 +11,7 @@ const SECTION_GROUPS = [
   [
     { id: "diary", label: "Дневник", icon: "⭐" },
     { id: "training", label: "Тренировочный лагерь", icon: "🏋️" },
-    {
-      id: "duel",
-      label: "Дуэль",
-      icon: "C:\Users\Александр и Юлечка\Desktop\e035c01c-5597-4de9-9035-acf3c75502ce.png",
-    },
+    { id: "duel", label: "Дуэль", icon: "⚔️" },
     { id: "campaign", label: "Путешествие", icon: "🌍" },
     { id: "village", label: "Поселок", icon: "🏘️" },
     { id: "march", label: "Поход", icon: "🏕️" },
