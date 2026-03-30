@@ -161,12 +161,12 @@ export default function MainPage({
                     opacity: blocked ? 0.5 : 1,
                   }}
                 >
-                  <span style={{ fontSize: 12, width: 5, textAlign: "center" }}>
+                  <span style={{ fontSize: 12, width: 7, textAlign: "center" }}>
                     {s.icon}
                   </span>
                   <span
                     style={{
-                      fontSize: 12,
+                      fontSize: 7,
                       color: "var(--text-dark)",
                       fontWeight: 80,
                     }}
