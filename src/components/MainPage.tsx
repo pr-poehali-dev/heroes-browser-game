@@ -31,49 +31,6 @@ const BOTTOM_NAV = [
   { id: "hero", label: "Герой", icon: "🧙" },
 ];
 
-// Руническая строка-разделитель в стиле викингов
-function VikingDivider() {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 2,
-        padding: "3px 16px",
-        background:
-          "linear-gradient(90deg, #f5ecc8 0%, #e8d59a 0%, #f5ecc8 100%)",
-        borderTop: "1px solid #c8a96e",
-        borderBottom: "1px solid #c8a96e",
-        userSelect: "none",
-      }}
-    >
-      <div
-        style={{
-          flex: 1,
-          height: 1,
-          background: "linear-gradient(90deg, transparent, #a07840)",
-        }}
-      />
-      <span
-        style={{
-          fontSize: 1,
-          color: "#7a5828",
-          letterSpacing: "0.25em",
-          fontFamily: "'Cormorant Garamond', serif",
-          fontWeight: 100,
-        }}
-      ></span>
-      <div
-        style={{
-          flex: 1,
-          height: 1,
-          background: "linear-gradient(90deg, #a07840, transparent)",
-        }}
-      />
-    </div>
-  );
-}
-
 interface MainPageProps {
   hero: { name: string; level: number };
   isCampaignActive: boolean;
