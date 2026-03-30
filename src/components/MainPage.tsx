@@ -161,9 +161,7 @@ export default function MainPage({
                     opacity: blocked ? 0.5 : 1,
                   }}
                 >
-                  <span
-                    style={{ fontSize: 15, width: 20, textAlign: "center" }}
-                  >
+                  <span style={{ fontSize: 6, width: 20, textAlign: "center" }}>
                     {s.icon}
                   </span>
                   <span
