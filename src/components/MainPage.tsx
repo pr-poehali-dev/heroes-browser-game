@@ -86,7 +86,7 @@ export default function MainPage({
           style={{
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: 20,
-            fontWeight: 700,
+            fontWeight: 500,
             color: "var(--text-dark)",
             margin: 0,
           }}
