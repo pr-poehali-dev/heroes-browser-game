@@ -50,7 +50,7 @@ function VikingDivider() {
       <div
         style={{
           flex: 1,
-          height: 0,3,
+          height: 1,
           background: "linear-gradient(90deg, transparent, #a07840)",
         }}
       />
