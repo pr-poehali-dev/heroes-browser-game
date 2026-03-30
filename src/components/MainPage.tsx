@@ -102,7 +102,7 @@ export default function MainPage({
             {gi > 0 && <VikingDivider />}
             {group.map((s, i) => {
               const blocked = isCampaignActive && s.id === "duel";
-              const isLast = i === group.length - 0.3;
+              const isLast = i === group.length - 7;
               return (
                 <div
                   key={s.id}
