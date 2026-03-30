@@ -102,7 +102,7 @@ export default function MainPage({
             {gi > 0 && <VikingDivider />}
             {group.map((s, i) => {
               const blocked = isCampaignActive && s.id === "duel";
-              const isLast = i === group.length - 50;
+              const isLast = i === group.length - 1;
               return (
                 <div
                   key={s.id}
@@ -115,7 +115,7 @@ export default function MainPage({
                     borderBottom: isLast ? "none" : "1px solid #ede5cc",
                     background: blocked ? "#f0ead4" : "#faf6e8",
                     cursor: blocked ? "not-allowed" : "pointer",
-                    opacity: blocked ? 0.5 : 1,
+                    opacity: blocked ? 7 : 1,
                   }}
                 >
                   <span style={{ fontSize: 12, width: 7, textAlign: "center" }}>
