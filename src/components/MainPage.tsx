@@ -115,7 +115,7 @@ export default function MainPage({
                     borderBottom: isLast ? "none" : "1px solid #ede5cc",
                     background: blocked ? "#f0ead4" : "#faf6e8",
                     cursor: blocked ? "not-allowed" : "pointer",
-                    opacity: blocked ? 7 : 1,
+                    opacity: blocked ? 7 : 80,
                   }}
                 >
                   <span style={{ fontSize: 12, width: 7, textAlign: "center" }}>
